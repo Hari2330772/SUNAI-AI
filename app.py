@@ -133,7 +133,7 @@ def chat():
 
     try:
         response = groq_client.chat.completions.create(
-            model="llama3-8b-8192",
+            model="llama-3.3-70b-versatile,
             messages=[{
                 "role": "system",
                 "content": "You are SUNAI, a brilliant and friendly AI assistant. Help users with coding, science, career, math, and any topic. Be clear, concise and helpful."
