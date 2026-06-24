@@ -175,6 +175,7 @@ def chat():
         return jsonify({"error": str(e)}), 500
 
 # ── Image upload + analysis ───────────────────────────────────────────────────
+
 @app.route("/analyze-image", methods=["POST"])
 @login_required
 def analyze_image():
@@ -187,7 +188,7 @@ def analyze_image():
     used  = user["usage"].get(today, 0)
     if user["plan"] == "free" and used >= FREE_LIMIT:
         return jsonify({"error": "limit_reached",
-                        "message": "Daily limit reached. Upgrade to Pro!"}), 429
+                        "message": "Daily limit reached!"}), 429
     if "image" not in request.files:
         return jsonify({"error": "No image uploaded"}), 400
     img_file = request.files["image"]
@@ -195,25 +196,28 @@ def analyze_image():
     img_data = base64.b64encode(img_file.read()).decode("utf-8")
     mime     = img_file.content_type or "image/jpeg"
     try:
-        # Use Groq vision model
         resp = groq_client.chat.completions.create(
-    model="llama-3.2-11b-vision-preview",
+            model="llama-3.2-11b-vision-preview",
             messages=[{"role": "user", "content": [
-                {"type": "text",       "text": f"You are SUNAI. {question}"},
-                {"type": "image_url",  "image_url": {"url": f"data:{mime};base64,{img_data}"}}
-            ]}], max_tokens=1000)
+                {"type": "text",
+                 "text": f"You are SUNAI, a helpful AI assistant. {question}"},
+                {"type": "image_url",
+                 "image_url": {
+                     "url": f"data:{mime};base64,{img_data}",
+                     "detail": "low"
+                 }}
+            ]}], max_tokens=800)
         reply = resp.choices[0].message.content
         user["usage"][today] = used + 1
         users[uid] = user
         save_users(users)
         history = load_history(uid)
-        history.append({"role": "user",     "content": f"[Image] {question}", "time": str(date.today())})
-        history.append({"role": "assistant", "content": reply,                  "time": str(date.today())})
+        history.append({"role": "user",      "content": f"[Image] {question}", "time": str(date.today())})
+        history.append({"role": "assistant",  "content": reply,                 "time": str(date.today())})
         save_history(uid, history)
         return jsonify({"reply": reply})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 # ── File/PDF upload + analysis ────────────────────────────────────────────────
 @app.route("/analyze-file", methods=["POST"])
 @login_required
