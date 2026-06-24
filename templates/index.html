@@ -249,7 +249,7 @@ input[type=file]{display:none}
   </div>
 </div>
 
-<input type="file" id="img-input" accept="image/*" onchange="attachImage(this)">
+<input type="file" id="img-input" accept="image/*" capture="environment" onchange="attachImage(this)">
 <input type="file" id="file-input" accept=".pdf,.txt,.py,.js,.html,.css,.csv,.md" onchange="attachFile(this)">
 
 <!-- AUTH MODAL -->
@@ -387,7 +387,7 @@ async function clearHistory(){
 // ── ATTACH ──────────────────────────────────────────────────────────────
 function attachImage(input){
   const file = input.files[0];
-  if(!file) return;
+  if(!file){ alert('Please select an image!'); return; }
   attachedImage = file;
   attachedType = 'image';
   const preview = document.getElementById('attach-preview');
@@ -457,7 +457,7 @@ async function send(){
     removeAttach();
     const tw = addMsg('ai','<div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>');
     const fd = new FormData();
-    fd.append('image', attachedImage || document.getElementById('img-input').files[0]);
+    fd.append('image', attachedImage);
     fd.append('question', txt || 'Describe this image in detail.');
     try{
       const res = await fetch('/analyze-image',{method:'POST',body:fd,credentials:'include'});
