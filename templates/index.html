@@ -387,17 +387,21 @@ async function clearHistory(){
 // ── ATTACH ──────────────────────────────────────────────────────────────
 function attachImage(input){
   const file = input.files[0];
-  if(!file){ alert('Please select an image!'); return; }
+  if(!file) return;
   attachedImage = file;
   attachedType = 'image';
-  const preview = document.getElementById('attach-preview');
-  const img = document.getElementById('preview-img');
-  const fileIcon = document.getElementById('preview-file-icon');
-  img.src = URL.createObjectURL(file);
-  img.style.display='block';
-  fileIcon.style.display='none';
-  document.getElementById('attach-name').textContent = file.name;
-  preview.style.display='flex';
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const preview = document.getElementById('attach-preview');
+    const img = document.getElementById('preview-img');
+    const fileIcon = document.getElementById('preview-file-icon');
+    img.src = e.target.result;
+    img.style.display='block';
+    fileIcon.style.display='none';
+    document.getElementById('attach-name').textContent = file.name;
+    preview.style.display='flex';
+  };
+  reader.readAsDataURL(file);
   input.value='';
 }
 
@@ -445,6 +449,10 @@ function fmt(t){
 async function send(){
   const txt = inpEl.value.trim();
   if((!txt && !attachedType) || busy) return;
+  if(attachedType==='image' && !attachedImage){
+    alert('Image not loaded yet, please try again');
+    return;
+  }
   if(!userData){ openAuth('signup'); return; }
 
   document.getElementById('welcome')?.remove();
