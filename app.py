@@ -210,16 +210,15 @@ def analyze_image():
     img_data = base64.b64encode(img_file.read()).decode("utf-8")
     mime     = img_file.content_type or "image/jpeg"
     try:
-        resp = groq_client.chat.completions.create(
-            model="llama-3.2-11b-vision-preview",
-            messages=[{"role": "user", "content": [
-                {"type": "text",      "text": f"You are SUNAI. {question}"},
-                {"type": "image_url", "image_url": {
-                    "url": f"data:{mime};base64,{img_data}",
-                    "detail": "low"
-                }}
-            ]}], max_tokens=800)
-        reply = resp.choices[0].message.content
+    resp = groq_client.chat.completions.create(
+        model="llama-3.2-90b-vision-preview",
+        messages=[{"role": "user", "content": [
+            {"type": "text",      "text": f"You are SUNAI, a helpful AI assistant. Please analyze this image and answer: {question}"},
+            {"type": "image_url", "image_url": {
+                "url": f"data:{mime};base64,{img_data}"
+            }}
+        ]}], max_tokens=800)
+    reply = resp.choices[0].message.content
         usage[today] = used + 1
         user["usage"] = usage
         save_user(user)
