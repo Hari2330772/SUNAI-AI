@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,8 +7,16 @@
 <title>SUNAI — Free AI Assistant | Ask Anything</title>
 <meta name="description" content="SUNAI is a free AI assistant. Ask anything, upload images and files, get instant answers.">
 <meta name="keywords" content="SUNAI, AI assistant, free AI, chatbot India">
+
+<!-- Premium Typography -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- KaTeX for High-Fidelity Mathematical Formula Rendering -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" onload="renderMathInBody()"></script>
+
 <style>
 * {
   box-sizing: border-box;
@@ -160,7 +169,7 @@ header {
   stroke-linecap: round;
 }
 
-/* ── SIDEBAR DRAWER ── */
+/* ── SIDEBAR HISTORY DRAWER ── */
 .drawer-overlay {
   display: none;
   position: fixed;
@@ -354,7 +363,7 @@ header {
   background: rgba(239, 68, 68, 0.1);
 }
 
-/* ── CHAT ENGINE ── */
+/* ── CHAT SCENE ── */
 #chat {
   flex: 1;
   overflow-y: auto;
@@ -369,7 +378,7 @@ header {
   border-radius: 10px;
 }
 
-/* ── WELCOME & DISCOVERY ── */
+/* ── WELCOME & DEFAULT DISCOVERIES ── */
 #welcome {
   display: flex;
   flex-direction: column;
@@ -472,7 +481,7 @@ header {
   transform: translateX(2px);
 }
 
-/* ── MESSAGES BUBBLES ── */
+/* ── CHAT BALLOONS ── */
 .msg-group {
   padding: 16px 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.02);
@@ -529,7 +538,7 @@ header {
   width: 100%;
 }
 
-/* Markdown parsing typography styling */
+/* Dynamic HTML Markdown elements */
 .markdown-payload p {
   margin-bottom: 12px;
 }
@@ -604,7 +613,7 @@ header {
   border: 1px solid var(--border);
 }
 
-/* Typing Indicator Animation */
+/* Streaming Loader Dots */
 .typing {
   display: flex;
   gap: 6px;
@@ -625,7 +634,7 @@ header {
   30% { transform: translateY(-6px); opacity: 1; }
 }
 
-/* ── ATTACHMENT PREVIEW STRIP ── */
+/* ── FLOATING ATTACHMENT ACTION STRIP ── */
 #attach-bar {
   display: none;
   padding: 8px 20px 0;
@@ -706,7 +715,7 @@ header {
   color: var(--text);
 }
 
-/* ── INPUT SYSTEM AREA ── */
+/* ── INPUT SYSTEM ── */
 .input-area {
   padding: 10px 20px 24px;
   flex-shrink: 0;
@@ -818,7 +827,7 @@ input[type=file] {
   display: none;
 }
 
-/* ── DAILY USAGE INDICATOR ── */
+/* ── DAILY USAGE PANEL INDICATORS ── */
 .usage-strip {
   padding: 8px 20px 4px;
   display: none;
@@ -879,7 +888,7 @@ input[type=file] {
   color: white;
 }
 
-/* ── DIALOG SYSTEM MODALS ── */
+/* ── DIALOG OVERLAY SYSTEM ── */
 .overlay {
   display: none;
   position: fixed;
@@ -941,7 +950,7 @@ input[type=file] {
   letter-spacing: -0.5px;
 }
 .modal h2 span {
-  color: var(--sun);
+  color: va
 }
 .modal-sub {
   font-size: 13.5px;
@@ -983,812 +992,4 @@ input[type=file] {
   display: block;
   margin-bottom: 6px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-.field input {
-  width: 100%;
-  background: var(--s1);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px 14px;
-  color: var(--text);
-  font-size: 14.5px;
-  outline: none;
-  transition: var(--transition);
-  font-family: 'Plus Jakarta Sans', sans-serif;
-}
-.field input:focus {
-  border-color: var(--sun);
-  background: #121215;
-}
-.merr {
-  font-size: 12.5px;
-  color: var(--red);
-  min-height: 18px;
-  text-align: center;
-  margin-bottom: 12px;
-  font-weight: 500;
-}
-.mbtn {
-  width: 100%;
-  padding: 14px;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  transition: var(--transition);
-}
-.mbtn.primary {
-  background: var(--sun);
-  color: white;
-  box-shadow: 0 4px 16px var(--sun-glow);
-}
-.mbtn.primary:hover {
-  background: var(--sun-light);
-  transform: translateY(-1px);
-}
-.mbtn.ghost {
-  background: transparent;
-  color: var(--muted);
-  border: 1px solid var(--border);
-  margin-top: 8px;
-}
-.mbtn.ghost:hover {
-  background: var(--s1);
-  color: var(--text);
-}
-.switch-text {
-  font-size: 13px;
-  color: var(--muted);
-  text-align: center;
-  margin-top: 16px;
-}
-.switch-text a {
-  color: var(--sun-light);
-  cursor: pointer;
-  font-weight: 600;
-}
-.switch-text a:hover {
-  text-decoration: underline;
-}
-
-/* ── PLAN MATRIX CARDS ── */
-.plan-row {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-@media (min-width: 400px) {
-  .plan-row {
-    flex-direction: row;
-  }
-}
-.plan-card {
-  flex: 1;
-  background: var(--s1);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 16px;
-  cursor: pointer;
-  transition: var(--transition);
-}
-.plan-card.active-plan {
-  border-color: var(--sun);
-  background: rgba(255, 107, 0, 0.04);
-}
-.plan-card .plan-name {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--muted);
-  margin-bottom: 6px;
-  text-transform: uppercase;
-}
-.plan-card.active-plan .plan-name {
-  color: var(--sun-light);
-}
-.plan-card .plan-price {
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--text);
-}
-.plan-card .plan-price span {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--muted);
-}
-.plan-card ul {
-  font-size: 12px;
-  color: var(--muted);
-  list-style: none;
-  margin-top: 12px;
-}
-.plan-card ul li {
-  margin-bottom: 6px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.plan-card ul li::before {
-  content: "✓";
-  color: var(--green);
-  font-weight: bold;
-}
-
-/* Toast Messages UI component */
-.toast-container {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #18181B;
-  color: #FFFFFF;
-  padding: 12px 20px;
-  border-radius: 30px;
-  border: 1px solid var(--border);
-  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-  font-size: 13.5px;
-  font-weight: 500;
-  z-index: 1000;
-  pointer-events: none;
-  opacity: 0;
-  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
-}
-.toast-container.show {
-  transform: translate(-50%, -10px);
-  opacity: 1;
-}
-</style>
-</head>
-<body>
-
-<!-- DRAWER BACKGROUND -->
-<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
-
-<!-- SIDEBAR DRAWER -->
-<div class="drawer" id="drawer">
-  <div class="drawer-header">
-    <span class="drawer-title">History</span>
-    <button class="new-chat-btn" onclick="newChat()">+ New</button>
-  </div>
-  <div class="drawer-body" id="hist-body">
-    <div style="font-size:13.5px;color:var(--muted);text-align:center;padding:32px 16px;line-height:1.7">Sign in to save<br>conversations permanently.</div>
-  </div>
-  <div class="drawer-footer" id="drawer-footer" style="display:none">
-    <div class="user-row">
-      <div class="user-avatar" id="drawer-av">S</div>
-      <div class="user-info">
-        <div class="user-name" id="drawer-name">User</div>
-        <div class="user-plan" id="drawer-plan">Free account</div>
-      </div>
-      <button class="logout-btn" onclick="logout()" title="Logout">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- HEADER -->
-<header>
-  <div style="display:flex;align-items:center;gap:8px">
-    <button class="icon-btn" onclick="openDrawer()" aria-label="Open History Drawer">
-      <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-    </button>
-    <div class="logo">
-      <div class="orb">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-      </div>
-      <span class="logo-name">SUN<span>AI</span></span>
-    </div>
-  </div>
-  <div class="hright">
-    <span id="plan-pill" class="plan-pill free-pill" style="display:none"></span>
-    <button class="icon-btn" id="btn-login" onclick="openAuth('login')" style="width:auto;padding:0 14px;border-radius:10px;font-size:13px;color:var(--muted);font-weight:600">Login</button>
-    <button class="icon-btn" id="btn-signup" onclick="openAuth('signup')" style="width:auto;padding:0 14px;border-radius:10px;font-size:13px;background:var(--sun);color:white;font-weight:600">Sign Up</button>
-    <button class="icon-btn" id="btn-upgrade" style="display:none;width:auto;padding:0 14px;border-radius:10px;font-size:13px;background:rgba(255,107,0,0.15);color:var(--sun-light);font-weight:600" onclick="openUpgrade()">⚡ Upgrade</button>
-  </div>
-</header>
-
-<!-- USAGE TRACKER BAR -->
-<div class="usage-strip" id="usage-strip">
-  <div class="usage-row">
-    <span class="usage-label">Daily queries</span>
-    <div class="ubar"><div class="ubar-fill" id="ubar-fill"></div></div>
-    <span class="usage-num" id="usage-num">0/10</span>
-    <span class="up-chip" onclick="openUpgrade()">Upgrade</span>
-  </div>
-</div>
-
-<!-- MAIN CHAT FLOW PANEL -->
-<div id="chat">
-  <div id="welcome">
-    <div class="sun-hero">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-    </div>
-    <h1>Ask anything to <span>SUNAI</span></h1>
-    <p>Your ultimate free AI assistant optimized for coding architecture, logical science, career development, and document translations.</p>
-    
-    <div class="suggestions">
-      <button class="sug-btn" onclick="q('What is machine learning and how does it work?')">
-        <span class="sug-title">What is machine learning?</span>
-        <span class="sug-desc">A conceptual explanation of core methodologies.<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
-      </button>
-      <button class="sug-btn" onclick="q('Write a Python binary search function with explanations')">
-        <span class="sug-title">Write Python Binary Search</span>
-        <span class="sug-desc">Get structured logic with complexities.<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
-      </button>
-      <button class="sug-btn" onclick="q('How do I structure a world-class system architect resume?')">
-        <span class="sug-title">Structure Architect Resume</span>
-        <span class="sug-desc">Get sections and layout structures.<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
-      </button>
-      <button class="sug-btn" onclick="q('Explain neural networks in simple words')">
-        <span class="sug-title">Neural Networks Explained</span>
-        <span class="sug-desc">Layman concepts and network models.<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- ATTACHMENT STRIP PREVIEW -->
-<div id="attach-bar">
-  <div class="attach-chip">
-    <img id="ap-img" style="display:none" alt="Attached preview element">
-    <div class="file-icon" id="ap-file-icon" style="display:none">
-      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-    </div>
-    <div class="attach-info">
-      <div class="attach-name" id="ap-name">Document.pdf</div>
-      <div class="attach-type" id="ap-type">PDF File</div>
-    </div>
-    <button class="remove-btn" onclick="removeAttach()" aria-label="Remove attachment">×</button>
-  </div>
-</div>
-
-<!-- INPUT BAR FOOTER CONTAINER -->
-<div class="input-area">
-  <div class="input-box">
-    <div class="input-top">
-      <textarea id="inp" rows="1" placeholder="Ask SUNAI anything..." onkeydown="onKey(event)" oninput="grow(this)"></textarea>
-      <button class="send-btn" id="snd" onclick="send()" aria-label="Send Message">
-        <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-      </button>
-    </div>
-    <div class="input-bottom">
-      <button class="att-btn" onclick="document.getElementById('img-inp').click()" title="Attach Image">
-        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-      </button>
-      <button class="att-btn" onclick="document.getElementById('file-inp').click()" title="Attach Document Document">
-        <svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-      </button>
-      <span class="input-hint">SUNAI Engine 2.5 · Enter to Send</span>
-    </div>
-  </div>
-</div>
-
-<input type="file" id="img-inp" accept="image/*" onchange="attachImg(this)">
-<input type="file" id="file-inp" accept=".pdf,.txt,.py,.js,.html,.css,.csv,.md" onchange="attachFile(this)">
-
-<!-- THE TOAST NOTIFICATION CONTAINER -->
-<div class="toast-container" id="toast">Copied to Clipboard!</div>
-
-<!-- AUTHENTICATION SYSTEM INTERFACES -->
-<div class="overlay" id="auth-modal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="mtab">
-      <button id="tab-signup" class="active" onclick="switchTab('signup')">Sign Up</button>
-      <button id="tab-login" onclick="switchTab('login')">Log In</button>
-    </div>
-    <h2 id="auth-title">Create account</h2>
-    <p class="modal-sub" id="auth-sub">Unlock chat persistence, high-fidelity processing speeds, and maximum attachment analysis options.</p>
-    
-    <div class="field">
-      <label>Email address</label>
-      <input type="email" id="auth-email" placeholder="you@domain.com">
-    </div>
-    <div class="field">
-      <label>Password</label>
-      <input type="password" id="auth-password" placeholder="••••••••">
-    </div>
-    
-    <div class="merr" id="auth-err"></div>
-    <button class="mbtn primary" id="auth-submit-btn" onclick="submitAuth()">Create Account</button>
-    <button class="mbtn ghost" onclick="closeAuth()">Cancel</button>
-    <div class="switch-text" id="auth-switch">Already have an account? <a onclick="switchTab('login')">Log in</a></div>
-  </div>
-</div>
-
-<!-- PAYWALL / PREMIUM UPGRADE SYSTEM INTERFACES -->
-<div class="overlay" id="upgrade-modal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <h2>Upgrade to <span>SUNAI Pro</span></h2>
-    <p class="modal-sub">Break barriers! Get limitless access with high fidelity performance and full context file parses.</p>
-    
-    <div class="plan-row">
-      <div class="plan-card" id="plan-card-free" onclick="selectPlan('free')">
-        <div class="plan-name">Free Plan</div>
-        <div class="plan-price">₹0<span>/mo</span></div>
-        <ul>
-          <li>10 queries daily</li>
-          <li>Standard AI Speed</li>
-          <li>Image attachments</li>
-        </ul>
-      </div>
-      <div class="plan-card active-plan" id="plan-card-pro" onclick="selectPlan('pro')">
-        <div class="plan-name">Pro Plan</div>
-        <div class="plan-price">₹199<span>/mo</span></div>
-        <ul>
-          <li>Unlimited queries</li>
-          <li>10x Generation Speed</li>
-          <li>Full document analysis</li>
-        </ul>
-      </div>
-    </div>
-    
-    <div class="merr" id="upgrade-err"></div>
-    <button class="mbtn primary" id="checkout-btn" onclick="checkoutPro()">Upgrade via UPI / Razorpay</button>
-    <button class="mbtn ghost" onclick="closeUpgrade()">Back to safety</button>
-  </div>
-</div>
-
-<script>
-// ── SYSTEM CONFIGURATIONS & STATE MANAGEMENT ──
-let state = {
-  isLoggedIn: false,
-  user: null, 
-  currentChatId: null,
-  chats: {}, 
-  activeAttachment: null, 
-  authMode: 'signup',
-  isGenerating: false,
-  selectedUpgradePlan: 'pro'
-};
-
-// DOM caching layers
-const chatContainer = document.getElementById('chat');
-const welcomeSection = document.getElementById('welcome');
-const inputField = document.getElementById('inp');
-const sendButton = document.getElementById('snd');
-const attachBar = document.getElementById('attach-bar');
-const apImg = document.getElementById('ap-img');
-const apFileIcon = document.getElementById('ap-file-icon');
-const apName = document.getElementById('ap-name');
-const apType = document.getElementById('ap-type');
-const imageInput = document.getElementById('img-inp');
-const fileInput = document.getElementById('file-inp');
-
-document.addEventListener("DOMContentLoaded", () => {
-  loadLocalState();
-  renderUserInterface();
-  newChat();
-});
-
-function loadLocalState() {
-  try {
-    const savedUser = localStorage.getItem('sunai_user');
-    const savedChats = localStorage.getItem('sunai_chats');
-    if (savedUser) {
-      state.user = JSON.parse(savedUser);
-      state.isLoggedIn = true;
-    }
-    if (savedChats) {
-      state.chats = JSON.parse(savedChats);
-    }
-  } catch (e) {
-    console.error("Local data layer loading issue:", e);
-  }
-}
-
-function saveState() {
-  try {
-    if (state.isLoggedIn && state.user) {
-      localStorage.setItem('sunai_user', JSON.stringify(state.user));
-    } else {
-      localStorage.removeItem('sunai_user');
-    }
-    localStorage.setItem('sunai_chats', JSON.stringify(state.chats));
-  } catch (e) {
-    console.error("Data conservation fault:", e);
-  }
-}
-
-// ── RENDER CONTROLLERS ──
-function renderUserInterface() {
-  const btnLogin = document.getElementById('btn-login');
-  const btnSignup = document.getElementById('btn-signup');
-  const btnUpgrade = document.getElementById('btn-upgrade');
-  const planPill = document.getElementById('plan-pill');
-  const usageStrip = document.getElementById('usage-strip');
-  const histBody = document.getElementById('hist-body');
-  const drawerFooter = document.getElementById('drawer-footer');
-
-  if (state.isLoggedIn && state.user) {
-    btnLogin.style.display = 'none';
-    btnSignup.style.display = 'none';
-    
-    planPill.style.display = 'inline-block';
-    planPill.innerText = state.user.plan === 'pro' ? '⚡ Pro' : 'Free';
-    planPill.className = `plan-pill ${state.user.plan}-pill`;
-    
-    btnUpgrade.style.display = state.user.plan === 'pro' ? 'none' : 'inline-block';
-    usageStrip.style.display = 'block';
-    
-    const limit = state.user.plan === 'pro' ? '∞' : state.user.limit;
-    const used = state.user.used || 0;
-    document.getElementById('usage-num').innerText = `${used}/${limit}`;
-    const percent = state.user.plan === 'pro' ? 0 : Math.min(100, (used / state.user.limit) * 100);
-    const ubarFill = document.getElementById('ubar-fill');
-    ubarFill.style.width = `${percent}%`;
-    if (percent >= 80) ubarFill.classList.add('warn');
-    else ubarFill.classList.remove('warn');
-
-    drawerFooter.style.display = 'block';
-    document.getElementById('drawer-name').innerText = state.user.email.split('@')[0];
-    document.getElementById('drawer-plan').innerText = state.user.plan === 'pro' ? 'Pro Member' : 'Free Tier';
-    document.getElementById('drawer-av').innerText = state.user.email.charAt(0).toUpperCase();
-
-    renderHistory();
-  } else {
-    btnLogin.style.display = 'inline-block';
-    btnSignup.style.display = 'inline-block';
-    btnUpgrade.style.display = 'none';
-    planPill.style.display = 'none';
-    usageStrip.style.display = 'none';
-    drawerFooter.style.display = 'none';
-    histBody.innerHTML = `<div style="font-size:13.5px;color:var(--muted);text-align:center;padding:32px 16px;line-height:1.7">Sign in to save<br>conversations permanently.</div>`;
-  }
-}
-
-function renderHistory() {
-  const histBody = document.getElementById('hist-body');
-  const keys = Object.keys(state.chats);
-  if (keys.length === 0) {
-    histBody.innerHTML = `<div style="font-size:12.5px;color:var(--subtle);text-align:center;padding:20px">No recent chats.</div>`;
-    return;
-  }
-  
-  let html = `<div class="hist-date-label">Recent Conversations</div>`;
-  keys.sort((a,b) => b.split('_')[1] - a.split('_')[1]).forEach(id => {
-    const chat = state.chats[id];
-    html += `
-      <div class="hist-item" id="hist-${id}">
-        <div class="hist-item-left" onclick="switchChat('${id}')">
-          <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          <span title="${escapeHtml(chat.title)}">${escapeHtml(chat.title)}</span>
-        </div>
-        <button class="hist-delete-btn" onclick="deleteChat(event, '${id}')" title="Delete conversation">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-        </button>
-      </div>`;
-  });
-  histBody.innerHTML = html;
-  
-  if (state.currentChatId) {
-    const activeItem = document.getElementById(`hist-${state.currentChatId}`);
-    if (activeItem) activeItem.style.background = 'var(--s1)';
-  }
-}
-
-// ── UTILITY ACTION CALLS ──
-function openDrawer() {
-  document.getElementById('drawer').classList.add('open');
-  document.getElementById('drawer-overlay').classList.add('open');
-}
-function closeDrawer() {
-  document.getElementById('drawer').classList.remove('open');
-  document.getElementById('drawer-overlay').classList.remove('open');
-}
-
-function newChat() {
-  state.currentChatId = null;
-  chatContainer.innerHTML = `
-    <div id="welcome">
-      <div class="sun-hero">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-      </div>
-      <h1>Ask anything to <span>SUNAI</span></h1>
-      <p>Your ultimate free AI assistant optimized for coding architecture, logical science, career development, and document translations.</p>
-      
-      <div class="suggestions">
-        <button class="sug-btn" onclick="q('What is machine learning and how does it work?')">
-          <span class="sug-title">What is machine learning?</span>
-          <span class="sug-desc">A conceptual explanation of core methodologies.<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
-        </button>
-        <button class="sug-btn" onclick="q('Write a Python binary search function with explanations')">
-          <span class="sug-title">Write Python Binary Search</span>
-          <span class="sug-desc">Get structured logic with complexities.<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
-        </button>
-        <button class="sug-btn" onclick="q('How do I structure a world-class system architect resume?')">
-          <span class="sug-title">Structure Architect Resume</span>
-          <span class="sug-desc">Get sections and layout structures.<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
-        </button>
-        <button class="sug-btn" onclick="q('Explain neural networks in simple words')">
-          <span class="sug-title">Neural Networks Explained</span>
-          <span class="sug-desc">Layman concepts and network models.<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
-        </button>
-      </div>
-    </div>`;
-  closeDrawer();
-}
-
-function switchChat(id) {
-  if (!state.chats[id]) return;
-  state.currentChatId = id;
-  chatContainer.innerHTML = '';
-  state.chats[id].messages.forEach(msg => {
-    appendMessageElement(msg.role, msg.content, msg.attachment);
-  });
-  closeDrawer();
-  chatContainer.scrollTop = chatContainer.scrollHeight;
-  renderHistory();
-}
-
-function deleteChat(event, id) {
-  event.stopPropagation();
-  if (confirm("Are you sure you want to delete this chat session?")) {
-    delete state.chats[id];
-    if (state.currentChatId === id) {
-      newChat();
-    }
-    saveState();
-    renderHistory();
-  }
-}
-
-function q(text) {
-  inputField.value = text;
-  grow(inputField);
-  send();
-}
-
-// ── ATTACHMENT PIPELINE ──
-function attachImg(input) {
-  const file = input.files[0];
-  if (!file) return;
-  
-  if (file.size > 5 * 1024 * 1024) {
-    showToast("Images are limited to 5MB.");
-    input.value = '';
-    return;
-  }
-  
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    state.activeAttachment = { type: 'image', base64: e.target.result, name: file.name, fileType: file.type };
-    apFileIcon.style.display = 'none';
-    apImg.style.display = 'block';
-    apImg.src = e.target.result;
-    apName.innerText = file.name;
-    apType.innerText = 'Image Component';
-    attachBar.style.display = 'block';
-  };
-  reader.readAsDataURL(file);
-}
-
-function attachFile(input) {
-  const file = input.files[0];
-  if (!file) return;
-
-  if (file.size > 10 * 1024 * 1024) {
-    showToast("Documents are limited to 10MB.");
-    input.value = '';
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    state.activeAttachment = { type: 'file', base64: e.target.result, name: file.name, fileType: file.type };
-    apImg.style.display = 'none';
-    apFileIcon.style.display = 'flex';
-    apName.innerText = file.name;
-    apType.innerText = file.name.split('.').pop().toUpperCase() + ' File';
-    attachBar.style.display = 'block';
-  };
-  reader.readAsDataURL(file);
-}
-
-function removeAttach() {
-  state.activeAttachment = null;
-  attachBar.style.display = 'none';
-  imageInput.value = '';
-  fileInput.value = '';
-}
-
-// ── INTERACTIVE MUTATION DYNAMICS ──
-function grow(element) {
-  element.style.height = "auto";
-  element.style.height = (element.scrollHeight - 4) + "px";
-}
-
-function onKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    send();
-  }
-}
-
-// ── TEXT PROCESSORS / PARSER ──
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-}
-
-function formatMarkdown(src) {
-  if (!src) return '';
-  let txt = escapeHtml(src);
-  
-  // High fidelity parsing maps for multi line preformatted sections
-  const codeBlockRegex = /```(.*?)\n([\s\S]*?)```/g;
-  let hasBlock = codeBlockRegex.test(txt);
-  
-  if (hasBlock) {
-    txt = txt.replace(codeBlockRegex, (match, lang, code) => {
-      const cleanLang = lang.trim() || 'code';
-      const cleanCode = code.trim();
-      const codeId = 'code_' + Math.random().toString(36).substring(2, 9);
-      
-      return `
-        <div class="code-block-container">
-          <div class="code-block-header">
-            <span>${cleanLang}</span>
-            <button class="copy-code-btn" onclick="copyRawCode('${codeId}')">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-              <span>Copy</span>
-            </button>
-          </div>
-          <pre id="${codeId}"><code>${cleanCode}</code></pre>
-        </div>`;
-    });
-  }
-  
-  // Parsing lists correctly
-  txt = txt.replace(/^\s*[-*]\s+(.*)$/gm, '<li>$1</li>');
-  txt = txt.replace(/(<li>.*<\/li>)/g, '<ul>$1</ul>');
-  txt = txt.replace(/<\/ul>\s*<ul>/g, ''); // Concatenate continuous lists
-
-  // Bold text mapping adjustments
-  txt = txt.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-  
-  // Inline Code blocks
-  txt = txt.replace(/`(.*?)`/g, '<code>$1</code>');
-  
-  // Correct multiple continuous break issues safely
-  txt = txt.replace(/\n/g, '<br>');
-  
-  return txt;
-}
-
-function copyRawCode(id) {
-  const codeElement = document.getElementById(id);
-  if (!codeElement) return;
-  
-  const range = document.createRange();
-  range.selectNode(codeElement);
-  window.getSelection().removeAllRanges();
-  window.getSelection().addRange(range);
-  
-  try {
-    document.execCommand('copy');
-    showToast("Code copied to clipboard!");
-  } catch (err) {
-    showToast("Execution failure. Copy manually.");
-  }
-  window.getSelection().removeAllRanges();
-}
-
-function showToast(message) {
-  const toast = document.getElementById('toast');
-  toast.innerText = message;
-  toast.classList.add('show');
-  setTimeout(() => {
-    toast.classList.remove('show');
-  }, 2200);
-}
-
-// ── TRANSMISSIONS & GENERATION LOGIC ──
-function send() {
-  const text = inputField.value.trim();
-  if (!text && !state.activeAttachment) return;
-  if (state.isGenerating) return;
-
-  // Defensive Checks: Daily standard accounts constraints
-  if (state.isLoggedIn && state.user && state.user.plan === 'free' && state.user.used >= state.user.limit) {
-    openUpgrade();
-    document.getElementById('upgrade-err').innerText = "Daily free request threshold reached. Upgrade to continue.";
-    return;
-  }
-
-  const welcome = document.getElementById('welcome');
-  if (welcome) welcome.remove();
-
-  const currentAttachment = state.activeAttachment ? { ...state.activeAttachment } : null;
-  removeAttach();
-  
-  inputField.value = '';
-  inputField.style.height = "24px";
-  
-  if (!state.currentChatId) {
-    state.currentChatId = 'chat_' + Date.now();
-    state.chats[state.currentChatId] = {
-      title: text ? (text.length > 30 ? text.substring(0, 30) + '...' : text) : 'File session query',
-      messages: []
-    };
-  }
-
-  const userMsg = { role: 'user', content: text, attachment: currentAttachment };
-  state.chats[state.currentChatId].messages.push(userMsg);
-  appendMessageElement('user', text, currentAttachment);
-  
-  if (state.isLoggedIn && state.user && state.user.plan !== 'pro') {
-    state.user.used = (state.user.used || 0) + 1;
-  }
-  
-  saveState();
-  renderUserInterface();
-  triggerAiResponse(text);
-}
-
-function appendMessageElement(role, text, attachment) {
-  const msgGroup = document.createElement('div');
-  msgGroup.className = `msg-group ${role}`;
-  
-  let attachmentHtml = '';
-  if (attachment) {
-    if (attachment.type === 'image') {
-      attachmentHtml = `<img src="${attachment.base64}" class="img-preview" alt="User upload preview">`;
-    } else {
-      attachmentHtml = `
-        <div class="attach-chip" style="margin-bottom:12px; background:var(--s2)">
-          <div class="file-icon"><svg viewBox="0 0 24 24" style="width:18px;height:18px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-          <div class="attach-info">
-            <div class="attach-name" style="max-width:220px">${escapeHtml(attachment.name)}</div>
-          </div>
-        </div>`;
-    }
-  }
-
-  if (role === 'user') {
-    msgGroup.innerHTML = `
-      <div class="bubble">
-        ${attachmentHtml}
-        ${text ? `<p>${escapeHtml(text).replace(/\n/g, '<br>')}</p>` : ''}
-      </div>`;
-  } else {
-    msgGroup.innerHTML = `
-      <div class="ai-av">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-      </div>
-      <div class="bubble">${attachmentHtml}<div class="markdown-payload">${formatMarkdown(text)}</div></div>`;
-  }
-  
-  chatContainer.appendChild(msgGroup);
-  chatContainer.scrollTop = chatContainer.scrollHeight;
-  return msgGroup;
-}
-
-function triggerAiResponse(queryText) {
-  state.isGenerating = true;
-  sendButton.disabled = true;
-
-  const loader = document.createElement('div');
-  loader.className = 'msg-group ai';
-  loader.id = 'ai-loader';
-  loader.innerHTML = `
-    <div class="ai-av">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-    </div>
-    <div class="bubble"><div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
-  chatContainer.appendChild(loader);
-  chatContainer.scrollTop = chatContainer.scrollHeight;
-
-  // Mock responses logic for immersive demonstration
-  setTimeout(() => {
-    loader.remove();
-    
-    let responseText = "Understood. Let me formulate a plan for you.";
-    
-    if (queryText.toLowerCase().includes("python") || queryText.toLowerCase().includes("search")) {
-      responseText = "Here is a highly optimized binary search function in Python.\n\n
+  text-transform: upper
