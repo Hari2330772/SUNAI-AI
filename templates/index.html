@@ -950,7 +950,7 @@ input[type=file] {
   letter-spacing: -0.5px;
 }
 .modal h2 span {
-  color: va
+  color: var(--sun);
 }
 .modal-sub {
   font-size: 13.5px;
@@ -992,4 +992,1030 @@ input[type=file] {
   display: block;
   margin-bottom: 6px;
   font-weight: 600;
-  text-transform: upper
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.field input {
+  width: 100%;
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-size: 14.5px;
+  outline: none;
+  transition: var(--transition);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.field input:focus {
+  border-color: var(--sun);
+  background: #121215;
+}
+.merr {
+  font-size: 12.5px;
+  color: var(--red);
+  min-height: 18px;
+  text-align: center;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+.mbtn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.mbtn.primary {
+  background: var(--sun);
+  color: white;
+  box-shadow: 0 4px 16px var(--sun-glow);
+}
+.mbtn.primary:hover {
+  background: var(--sun-light);
+  transform: translateY(-1px);
+}
+.mbtn.ghost {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  margin-top: 8px;
+}
+.mbtn.ghost:hover {
+  background: var(--s1);
+  color: var(--text);
+}
+.switch-text {
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 16px;
+}
+.switch-text a {
+  color: var(--sun-light);
+  cursor: pointer;
+  font-weight: 600;
+}
+.switch-text a:hover {
+  text-decoration: underline;
+}
+
+/* ── PLAN SELECTION SCHEME ── */
+.plan-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+@media (min-width: 400px) {
+  .plan-row {
+    flex-direction: row;
+  }
+}
+.plan-card {
+  flex: 1;
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.plan-card.active-plan {
+  border-color: var(--sun);
+  background: rgba(255, 107, 0, 0.04);
+}
+.plan-card .plan-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+.plan-card.active-plan .plan-name {
+  color: var(--sun-light);
+}
+.plan-card .plan-price {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+}
+.plan-card .plan-price span {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.plan-card ul {
+  font-size: 12px;
+  color: var(--muted);
+  list-style: none;
+  margin-top: 12px;
+}
+.plan-card ul li {
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.plan-card ul li::before {
+  content: "✓";
+  color: var(--green);
+  font-weight: bold;
+}
+
+/* Custom Notification Toast Banner */
+.toast-container {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #18181B;
+  color: #FFFFFF;
+  padding: 12px 20px;
+  border-radius: 30px;
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  font-size: 13.5px;
+  font-weight: 500;
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+}
+.toast-container.show {
+  transform: translate(-50%, -10px);
+  opacity: 1;
+}
+</style>
+</head>
+<body>
+
+<!-- COLLAPSED SIDEBAR BACKGROUND BLUR -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+
+<!-- SIDEBAR NAVIGATION DRAWER -->
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <span class="drawer-title">History</span>
+    <button class="new-chat-btn" onclick="newChat()">+ New</button>
+  </div>
+  <div class="drawer-body" id="hist-body">
+    <div style="font-size:13.5px;color:var(--muted);text-align:center;padding:32px 16px;line-height:1.7">Sign in to save<br>conversations permanently.</div>
+  </div>
+  <div class="drawer-footer" id="drawer-footer" style="display:none">
+    <div class="user-row">
+      <div class="user-avatar" id="drawer-av">U</div>
+      <div class="user-info">
+        <div class="user-name" id="drawer-name">User</div>
+        <div class="user-plan" id="drawer-plan">Free plan</div>
+      </div>
+      <button class="logout-btn" onclick="logout()" title="Logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER BAR -->
+<header>
+  <div style="display:flex;align-items:center;gap:8px">
+    <button class="icon-btn" onclick="openDrawer()" aria-label="Open History Drawer">
+      <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div class="logo">
+      <div class="orb">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      </div>
+      <span class="logo-name">SUN<span>AI</span></span>
+    </div>
+  </div>
+  <div class="hright">
+    <span id="plan-pill" class="plan-pill free-pill" style="display:none"></span>
+    <button class="icon-btn" id="btn-login" onclick="openAuth('login')" style="width:auto;padding:0 14px;border-radius:10px;font-size:13px;color:var(--muted);font-weight:600">Login</button>
+    <button class="icon-btn" id="btn-signup" onclick="openAuth('signup')" style="width:auto;padding:0 14px;border-radius:10px;font-size:13px;background:var(--sun);color:white;font-weight:600">Sign Up</button>
+    <button class="icon-btn" id="btn-upgrade" style="display:none;width:auto;padding:0 14px;border-radius:10px;font-size:13px;background:rgba(255,107,0,0.15);color:var(--sun-light);font-weight:600" onclick="openUpgrade()">⚡ Upgrade</button>
+  </div>
+</header>
+
+<!-- PROGRESS BAR FOR USAGE THRESHOLDS -->
+<div class="usage-strip" id="usage-strip">
+  <div class="usage-row">
+    <span class="usage-label">Daily queries</span>
+    <div class="ubar"><div class="ubar-fill" id="ubar-fill"></div></div>
+    <span class="usage-num" id="usage-num">0/10</span>
+    <span class="up-chip" onclick="openUpgrade()">Upgrade</span>
+  </div>
+</div>
+
+<!-- CENTRAL CONVERSATION FIELD -->
+<div id="chat">
+  <div id="welcome">
+    <div class="sun-hero">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+    </div>
+    <h1>Ask anything to <span>SUNAI</span></h1>
+    <p>Your ultimate free AI assistant optimized for coding architecture, logical science, career development, and document translations.</p>
+    
+    <div class="suggestions">
+      <button class="sug-btn" onclick="q('What is machine learning and how does it work?')">
+        <span class="sug-title">What is machine learning?</span>
+        <span class="sug-desc">A conceptual explanation of core methodologies.<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+      </button>
+      <button class="sug-btn" onclick="q('Write a Python binary search function with explanations')">
+        <span class="sug-title">Write Python Binary Search</span>
+        <span class="sug-desc">Get structured logic with complexities.<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+      </button>
+      <button class="sug-btn" onclick="q('How do I structure a world-class system architect resume?')">
+        <span class="sug-title">Structure Architect Resume</span>
+        <span class="sug-desc">Get sections and layout structures.<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+      </button>
+      <button class="sug-btn" onclick="q('Explain neural networks in simple words')">
+        <span class="sug-title">Neural Networks Explained</span>
+        <span class="sug-desc">Layman concepts and network models.<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- FILE PREVIEW STRIP ABOVE INPUT -->
+<div id="attach-bar">
+  <div class="attach-chip">
+    <img id="ap-img" style="display:none" alt="Attached image preview">
+    <div class="file-icon" id="ap-file-icon" style="display:none">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    </div>
+    <div class="attach-info">
+      <div class="attach-name" id="ap-name">Document.pdf</div>
+      <div class="attach-type" id="ap-type">PDF File</div>
+    </div>
+    <button class="remove-btn" onclick="removeAttach()" aria-label="Remove attachment">×</button>
+  </div>
+</div>
+
+<!-- CHAT ACTIONS BOX FOOTER -->
+<div class="input-area">
+  <div class="input-box">
+    <div class="input-top">
+      <textarea id="inp" rows="1" placeholder="Ask SUNAI anything..." onkeydown="onKey(event)" oninput="grow(this)"></textarea>
+      <button class="send-btn" id="snd" onclick="send()" aria-label="Send Message">
+        <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+    <div class="input-bottom">
+      <button class="att-btn" onclick="document.getElementById('img-inp').click()" title="Attach Image">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      </button>
+      <button class="att-btn" onclick="document.getElementById('file-inp').click()" title="Attach Document">
+        <svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+      </button>
+      <span class="input-hint">SUNAI Engine 3.0 · Enter to Send</span>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="img-inp" accept="image/*" onchange="attachImg(this)">
+<input type="file" id="file-inp" accept=".pdf,.txt,.py,.js,.html,.css,.csv,.md" onchange="attachFile(this)">
+
+<!-- FLOATING TOAST GRAPHIC -->
+<div class="toast-container" id="toast">Copied to Clipboard!</div>
+
+<!-- LOGIN / REGISTRATION DIALOG MODAL -->
+<div class="overlay" id="auth-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="mtab">
+      <button id="tab-signup" class="active" onclick="switchTab('signup')">Sign Up</button>
+      <button id="tab-login" onclick="switchTab('login')">Log In</button>
+    </div>
+    <h2 id="auth-title">Create account</h2>
+    <p class="modal-sub" id="auth-sub">Unlock chat persistence, high-fidelity processing speeds, and maximum attachment analysis options.</p>
+    
+    <div class="field" id="field-name">
+      <label>Name</label>
+      <input type="text" id="auth-name" placeholder="John Doe">
+    </div>
+    <div class="field">
+      <label>Email address</label>
+      <input type="email" id="auth-email" placeholder="you@domain.com">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="auth-password" placeholder="••••••••">
+    </div>
+    
+    <div class="merr" id="auth-err"></div>
+    <button class="mbtn primary" id="auth-submit-btn" onclick="submitAuth()">Create Account</button>
+    <button class="mbtn ghost" onclick="closeAuth()">Cancel</button>
+    <div class="switch-text" id="auth-switch">Already have an account? <a onclick="switchTab('login')">Log in</a></div>
+  </div>
+</div>
+
+<!-- PLAN UPGRADE SUBSCRIPTION SYSTEM MODAL -->
+<div class="overlay" id="upgrade-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2>Upgrade to <span>SUNAI Pro</span></h2>
+    <p class="modal-sub">Break barriers! Get limitless access with high-fidelity performance and full context file parses.</p>
+    
+    <div class="plan-row">
+      <div class="plan-card" id="plan-card-free" onclick="selectPlan('free')">
+        <div class="plan-name">Free Plan</div>
+        <div class="plan-price">₹0<span>/mo</span></div>
+        <ul>
+          <li>{{ free_limit }} queries daily</li>
+          <li>Standard AI Speed</li>
+          <li>Basic file attachments</li>
+        </ul>
+      </div>
+      <div class="plan-card active-plan" id="plan-card-pro" onclick="selectPlan('pro')">
+        <div class="plan-name">Pro Plan</div>
+        <div class="plan-price">₹199<span>/mo</span></div>
+        <ul>
+          <li>Unlimited queries</li>
+          <li>10x Generation Speed</li>
+          <li>Full document analysis</li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="merr" id="upgrade-err"></div>
+    <button class="mbtn primary" id="checkout-btn" onclick="checkoutPro()">Upgrade via UPI / Razorpay</button>
+    <button class="mbtn ghost" onclick="closeUpgrade()">Back to safety</button>
+  </div>
+</div>
+
+<script>
+// ── SYSTEM CONFIGURATIONS & STATE MANAGEMENT ──
+let state = {
+  isLoggedIn: false,
+  user: null, // { name, plan, email, used_today, remaining }
+  messages: [], // Current runtime session messages mapped chronologically
+  activeAttachment: {
+    type: null,      // 'image' or 'file'
+    fileBlob: null,  // Holds actual JavaScript File Object
+    name: '',
+    fileType: '',
+    previewUrl: ''
+  },
+  authMode: 'signup',
+  isGenerating: false,
+  selectedUpgradePlan: 'pro'
+};
+
+const chatContainer = document.getElementById('chat');
+const inputField = document.getElementById('inp');
+const sendButton = document.getElementById('snd');
+const attachBar = document.getElementById('attach-bar');
+const apImg = document.getElementById('ap-img');
+const apFileIcon = document.getElementById('ap-file-icon');
+const apName = document.getElementById('ap-name');
+const apType = document.getElementById('ap-type');
+const imageInput = document.getElementById('img-inp');
+const fileInput = document.getElementById('file-inp');
+
+// Execute initial pipeline on mount
+document.addEventListener("DOMContentLoaded", () => {
+  checkSession();
+});
+
+// Sync current cookies and get login metrics from backend `/me`
+async function checkSession() {
+  try {
+    const res = await fetch("/me");
+    if (res.ok) {
+      const data = await res.json();
+      state.isLoggedIn = true;
+      state.user = data;
+      renderUserInterface();
+      loadHistoryFromServer();
+    } else {
+      state.isLoggedIn = false;
+      state.user = null;
+      renderUserInterface();
+    }
+  } catch (err) {
+    console.error("Session sync issue:", err);
+    state.isLoggedIn = false;
+    renderUserInterface();
+  }
+}
+
+// Retrieve past context from the database `/history`
+async function loadHistoryFromServer() {
+  try {
+    const res = await fetch("/history");
+    if (res.ok) {
+      const data = await res.json();
+      if (data.history && data.history.length > 0) {
+        const welcome = document.getElementById('welcome');
+        if (welcome) welcome.remove();
+        
+        chatContainer.innerHTML = '';
+        state.messages = [];
+        
+        data.history.forEach(item => {
+          // Keep conversational alignment mapped to standard role expectations
+          const normalizedRole = (item.role === "assistant" || item.role === "assistant") ? "assistant" : "user";
+          state.messages.push({
+            role: normalizedRole,
+            content: item.content
+          });
+          appendMessageElement(normalizedRole === "assistant" ? "ai" : "user", item.content);
+        });
+        
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+        renderHistoryList();
+      }
+    }
+  } catch (err) {
+    console.error("Failed to load historical database layers:", err);
+  }
+}
+
+// Dynamic UI updates for plan thresholds
+function renderUserInterface() {
+  const btnLogin = document.getElementById('btn-login');
+  const btnSignup = document.getElementById('btn-signup');
+  const btnUpgrade = document.getElementById('btn-upgrade');
+  const planPill = document.getElementById('plan-pill');
+  const usageStrip = document.getElementById('usage-strip');
+  const histBody = document.getElementById('hist-body');
+  const drawerFooter = document.getElementById('drawer-footer');
+
+  if (state.isLoggedIn && state.user) {
+    btnLogin.style.display = 'none';
+    btnSignup.style.display = 'none';
+    
+    planPill.style.display = 'inline-block';
+    planPill.innerText = state.user.plan === 'pro' ? '⚡ Pro' : 'Free';
+    planPill.className = `plan-pill ${state.user.plan}-pill`;
+    
+    btnUpgrade.style.display = state.user.plan === 'pro' ? 'none' : 'inline-block';
+    usageStrip.style.display = 'block';
+    
+    const limit = state.user.plan === 'pro' ? '∞' : (state.user.used_today + state.user.remaining);
+    const used = state.user.used_today || 0;
+    document.getElementById('usage-num').innerText = `${used}/${limit}`;
+    const percent = state.user.plan === 'pro' ? 0 : Math.min(100, (used / limit) * 100);
+    const ubarFill = document.getElementById('ubar-fill');
+    ubarFill.style.width = `${percent}%`;
+    if (percent >= 80) ubarFill.classList.add('warn');
+    else ubarFill.classList.remove('warn');
+
+    drawerFooter.style.display = 'block';
+    document.getElementById('drawer-name').innerText = state.user.name;
+    document.getElementById('drawer-plan').innerText = state.user.plan === 'pro' ? 'Pro Member' : 'Free Tier';
+    document.getElementById('drawer-av').innerText = state.user.name.charAt(0).toUpperCase();
+
+    renderHistoryList();
+  } else {
+    btnLogin.style.display = 'inline-block';
+    btnSignup.style.display = 'inline-block';
+    btnUpgrade.style.display = 'none';
+    planPill.style.display = 'none';
+    usageStrip.style.display = 'none';
+    drawerFooter.style.display = 'none';
+    histBody.innerHTML = `<div style="font-size:13.5px;color:var(--muted);text-align:center;padding:32px 16px;line-height:1.7">Sign in to save<br>conversations permanently.</div>`;
+  }
+}
+
+function renderHistoryList() {
+  const histBody = document.getElementById('hist-body');
+  if (!state.isLoggedIn) return;
+
+  if (state.messages.length === 0) {
+    histBody.innerHTML = `<div style="font-size:12.5px;color:var(--subtle);text-align:center;padding:20px">No recent conversations.</div>`;
+    return;
+  }
+  
+  // Condense the thread list for dynamic, streamlined sidebar viewing
+  const firstUserMessage = state.messages.find(m => m.role === 'user');
+  const titleText = firstUserMessage ? (firstUserMessage.content.substring(0, 24) + '...') : 'Active Chat Room';
+  
+  histBody.innerHTML = `
+    <div class="hist-date-label">Current Chat Session</div>
+    <div class="hist-item" style="background: var(--s1)">
+      <div class="hist-item-left">
+        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>${escapeHtml(titleText)}</span>
+      </div>
+      <button class="hist-delete-btn" onclick="clearHistoryLogs(event)" title="Wipe entire server session history">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      </button>
+    </div>`;
+}
+
+async function clearHistoryLogs(event) {
+  if (event) event.stopPropagation();
+  if (confirm("Reset current conversation logs from the database permanently?")) {
+    try {
+      const res = await fetch("/history/clear", { method: "POST" });
+      if (res.ok) {
+        showToast("Database history wiped clean!");
+        newChat();
+      }
+    } catch (e) {
+      console.error("Database deletion process encountered an error:", e);
+    }
+  }
+}
+
+// ── WINDOW DRAWER UTILITIES ──
+function openDrawer() {
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawer-overlay').classList.add('open');
+}
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawer-overlay').classList.remove('open');
+}
+
+function newChat() {
+  state.messages = [];
+  chatContainer.innerHTML = `
+    <div id="welcome">
+      <div class="sun-hero">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      </div>
+      <h1>Ask anything to <span>SUNAI</span></h1>
+      <p>Your ultimate free AI assistant optimized for coding architecture, logical science, career development, and document translations.</p>
+      
+      <div class="suggestions">
+        <button class="sug-btn" onclick="q('What is machine learning and how does it work?')">
+          <span class="sug-title">What is machine learning?</span>
+          <span class="sug-desc">A conceptual explanation of core methodologies.<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+        </button>
+        <button class="sug-btn" onclick="q('Write a Python binary search function with explanations')">
+          <span class="sug-title">Write Python Binary Search</span>
+          <span class="sug-desc">Get structured logic with complexities.<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+        </button>
+        <button class="sug-btn" onclick="q('How do I structure a world-class system architect resume?')">
+          <span class="sug-title">Structure Architect Resume</span>
+          <span class="sug-desc">Get sections and layout structures.<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+        </button>
+        <button class="sug-btn" onclick="q('Explain neural networks in simple words')">
+          <span class="sug-title">Neural Networks Explained</span>
+          <span class="sug-desc">Layman concepts and network models.<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+        </button>
+      </div>
+    </div>`;
+  closeDrawer();
+  renderUserInterface();
+}
+
+function q(text) {
+  inputField.value = text;
+  grow(inputField);
+  send();
+}
+
+// ── ATTACHMENT PIPELINE ──
+function attachImg(input) {
+  const file = input.files[0];
+  if (!file) return;
+  
+  if (file.size > 5 * 1024 * 1024) {
+    showToast("Images are limited to 5MB.");
+    input.value = '';
+    return;
+  }
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    state.activeAttachment = { 
+      type: 'image', 
+      fileBlob: file, 
+      name: file.name, 
+      fileType: file.type,
+      previewUrl: e.target.result 
+    };
+    apFileIcon.style.display = 'none';
+    apImg.style.display = 'block';
+    apImg.src = e.target.result;
+    apName.innerText = file.name;
+    apType.innerText = 'Image Component';
+    attachBar.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function attachFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  if (file.size > 10 * 1024 * 1024) {
+    showToast("Documents are limited to 10MB.");
+    input.value = '';
+    return;
+  }
+
+  state.activeAttachment = { 
+    type: 'file', 
+    fileBlob: file, 
+    name: file.name, 
+    fileType: file.name.split('.').pop().toUpperCase()
+  };
+  apImg.style.display = 'none';
+  apFileIcon.style.display = 'flex';
+  apName.innerText = file.name;
+  apType.innerText = file.name.split('.').pop().toUpperCase() + ' File';
+  attachBar.style.display = 'block';
+}
+
+function removeAttach() {
+  state.activeAttachment = { type: null, fileBlob: null, name: '', fileType: '', previewUrl: '' };
+  attachBar.style.display = 'none';
+  imageInput.value = '';
+  fileInput.value = '';
+}
+
+// ── INPUT SYSTEM UTILS ──
+function grow(element) {
+  element.style.height = "auto";
+  element.style.height = (element.scrollHeight - 4) + "px";
+}
+
+function onKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    send();
+  }
+}
+
+// ── TYPOGRAPHY FORMATTERS FOR MARKDOWN & MATHS ──
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+function formatMarkdown(src) {
+  if (!src) return '';
+  let txt = escapeHtml(src);
+  
+  // Syntax highlighted code-block mapping
+  const codeBlockRegex = /```(.*?)\n([\s\S]*?)```/g;
+  txt = txt.replace(codeBlockRegex, (match, lang, code) => {
+    const cleanLang = lang.trim() || 'code';
+    const cleanCode = code.trim();
+    const codeId = 'code_' + Math.random().toString(36).substring(2, 9);
+    
+    return `
+      <div class="code-block-container">
+        <div class="code-block-header">
+          <span>${cleanLang}</span>
+          <button class="copy-code-btn" onclick="copyRawCode('${codeId}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span>Copy</span>
+          </button>
+        </div>
+        <pre id="${codeId}"><code>${cleanCode}</code></pre>
+      </div>`;
+  });
+
+  // Bullet Point parser mappings
+  txt = txt.replace(/^\s*[-*]\s+(.*)$/gm, '<li>$1</li>');
+  txt = txt.replace(/(<li>.*<\/li>)/g, '<ul>$1</ul>');
+  txt = txt.replace(/<\/ul>\s*<ul>/g, ''); 
+
+  // Strong formatting
+  txt = txt.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  
+  // Inline code elements
+  txt = txt.replace(/`(.*?)`/g, '<code>$1</code>');
+  
+  // Newline adjustments
+  txt = txt.replace(/\n/g, '<br>');
+  
+  return txt;
+}
+
+function copyRawCode(id) {
+  const codeElement = document.getElementById(id);
+  if (!codeElement) return;
+  
+  const range = document.createRange();
+  range.selectNode(codeElement);
+  window.getSelection().removeAllRanges();
+  window.getSelection().addRange(range);
+  
+  try {
+    document.execCommand('copy');
+    showToast("Code copied to clipboard!");
+  } catch (err) {
+    showToast("Execution failure. Copy manually.");
+  }
+  window.getSelection().removeAllRanges();
+}
+
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  toast.innerText = message;
+  toast.classList.add('show');
+  setTimeout(() => {
+    toast.classList.remove('show');
+  }, 2200);
+}
+
+// ── BACKEND API TRANSMISSIONS ──
+async function send() {
+  const text = inputField.value.trim();
+  if (!text && !state.activeAttachment.fileBlob) return;
+  if (state.isGenerating) return;
+
+  if (!state.isLoggedIn) {
+    openAuth('signup');
+    document.getElementById('auth-err').innerText = "Register your profile to start chatting with SUNAI!";
+    return;
+  }
+
+  // Quota guard limits for free users
+  if (state.user && state.user.plan === 'free' && state.user.used_today >= (state.user.used_today + state.user.remaining)) {
+    openUpgrade();
+    document.getElementById('upgrade-err').innerText = "Standard free operations daily limit reached. Upgrade to Pro!";
+    return;
+  }
+
+  const welcome = document.getElementById('welcome');
+  if (welcome) welcome.remove();
+
+  const currentAttachment = { ...state.activeAttachment };
+  removeAttach();
+
+  inputField.value = '';
+  inputField.style.height = "24px";
+
+  // Feed user query into local conversation logs
+  state.messages.push({ role: 'user', content: text });
+  appendMessageElement('user', text, currentAttachment);
+
+  triggerAiGeneration(text, currentAttachment);
+}
+
+function appendMessageElement(role, text, attachment) {
+  const msgGroup = document.createElement('div');
+  msgGroup.className = `msg-group ${role}`;
+  
+  let attachmentHtml = '';
+  if (attachment && attachment.type) {
+    if (attachment.type === 'image') {
+      attachmentHtml = `<img src="${attachment.previewUrl || ''}" class="img-preview" alt="User image asset">`;
+    } else {
+      attachmentHtml = `
+        <div class="attach-chip" style="margin-bottom:12px; background:var(--s2)">
+          <div class="file-icon"><svg viewBox="0 0 24 24" style="width:18px;height:18px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="attach-info">
+            <div class="attach-name" style="max-width:220px">${escapeHtml(attachment.name)}</div>
+          </div>
+        </div>`;
+    }
+  }
+
+  if (role === 'user') {
+    msgGroup.innerHTML = `
+      <div class="bubble">
+        ${attachmentHtml}
+        ${text ? `<p>${escapeHtml(text).replace(/\n/g, '<br>')}</p>` : ''}
+      </div>`;
+  } else {
+    msgGroup.innerHTML = `
+      <div class="ai-av">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      </div>
+      <div class="bubble">${attachmentHtml}<div class="markdown-payload">${formatMarkdown(text)}</div></div>`;
+  }
+  
+  chatContainer.appendChild(msgGroup);
+  chatContainer.scrollTop = chatContainer.scrollHeight;
+  
+  // Format any LaTeX mathematical formula present inside the message node
+  if (window.renderMathInElement) {
+    renderMathInElement(msgGroup, {
+      delimiters: [
+        {left: '$$', right: '$$', display: true},
+        {left: '$', right: '$', display: false}
+      ],
+      throwOnError : false
+    });
+  }
+  return msgGroup;
+}
+
+async function triggerAiGeneration(userQuery, attachmentObj) {
+  state.isGenerating = true;
+  sendButton.disabled = true;
+
+  const loader = document.createElement('div');
+  loader.className = 'msg-group ai';
+  loader.id = 'ai-loader';
+  loader.innerHTML = `
+    <div class="ai-av">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+    </div>
+    <div class="bubble"><div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
+  chatContainer.appendChild(loader);
+  chatContainer.scrollTop = chatContainer.scrollHeight;
+
+  try {
+    let res;
+    let replyText = "";
+
+    // Pipeline conditional switches mapped with active attachment structures
+    if (attachmentObj && attachmentObj.type === 'image') {
+      const formData = new FormData();
+      formData.append("image", attachmentObj.fileBlob);
+      formData.append("question", userQuery || "Describe this image in detail.");
+      
+      res = await fetch("/analyze-image", {
+        method: "POST",
+        body: formData
+      });
+    } 
+    else if (attachmentObj && attachmentObj.type === 'file') {
+      const formData = new FormData();
+      formData.append("file", attachmentObj.fileBlob);
+      formData.append("question", userQuery || "Summarize this document.");
+      
+      res = await fetch("/analyze-file", {
+        method: "POST",
+        body: formData
+      });
+    } 
+    else {
+      res = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: state.messages })
+      });
+    }
+
+    loader.remove();
+
+    if (res.ok) {
+      const data = await res.json();
+      replyText = data.reply;
+      
+      state.messages.push({ role: 'assistant', content: replyText });
+      appendMessageElement('ai', replyText);
+      
+      // Update global states metrics from API
+      await checkSession();
+    } else {
+      const errData = await res.json().catch(() => ({}));
+      replyText = errData.message || errData.error || "A processing anomaly has occurred. Please try again.";
+      appendMessageElement('ai', `⚠️ Error: ${replyText}`);
+    }
+  } catch (err) {
+    loader.remove();
+    appendMessageElement('ai', "⚠️ Network connection timeout. Verify server operations status.");
+    console.error(err);
+  } finally {
+    state.isGenerating = false;
+    sendButton.disabled = false;
+  }
+}
+
+// ── CREDENTIAL AUTH CONTEXTS ──
+function openAuth(mode = 'signup') {
+  state.authMode = mode;
+  document.getElementById('auth-modal').classList.add('show');
+  switchTab(mode);
+}
+
+function closeAuth() {
+  document.getElementById('auth-modal').classList.remove('show');
+  document.getElementById('auth-err').innerText = '';
+}
+
+function switchTab(mode) {
+  state.authMode = mode;
+  const tabSignup = document.getElementById('tab-signup');
+  const tabLogin = document.getElementById('tab-login');
+  const title = document.getElementById('auth-title');
+  const submitBtn = document.getElementById('auth-submit-btn');
+  const switchTxt = document.getElementById('auth-switch');
+  const nameField = document.getElementById('field-name');
+
+  if (mode === 'signup') {
+    tabSignup.classList.add('active');
+    tabLogin.classList.remove('active');
+    nameField.style.display = 'block';
+    title.innerText = "Create Account";
+    submitBtn.innerText = "Register Profile";
+    switchTxt.innerHTML = `Already have an account? <a onclick="switchTab('login')">Log in</a>`;
+  } else {
+    tabLogin.classList.add('active');
+    tabSignup.classList.remove('active');
+    nameField.style.display = 'none';
+    title.innerText = "Welcome Back";
+    submitBtn.innerText = "Log In Securely";
+    switchTxt.innerHTML = `New to SUNAI? <a onclick="switchTab('signup')">Create account</a>`;
+  }
+}
+
+async function submitAuth() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value.trim();
+  const name = document.getElementById('auth-name').value.trim();
+  const errDiv = document.getElementById('auth-err');
+
+  if (!email || !password || (state.authMode === 'signup' && !name)) {
+    errDiv.innerText = "Please complete all requested parameters.";
+    return;
+  }
+
+  const endpoint = state.authMode === 'signup' ? '/register' : '/login';
+  const bodyData = state.authMode === 'signup' ? { name, email, password } : { email, password };
+
+  try {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(bodyData)
+    });
+
+    if (res.ok) {
+      showToast("Authentication confirmed!");
+      closeAuth();
+      await checkSession();
+    } else {
+      const err = await res.json();
+      errDiv.innerText = err.error || "Authentication failed.";
+    }
+  } catch (err) {
+    errDiv.innerText = "Connection error. Try again.";
+  }
+}
+
+function logout() {
+  window.location.href = "/logout";
+}
+
+// ── PRO PLAN UPGRADES ──
+function openUpgrade() {
+  document.getElementById('upgrade-modal').classList.add('show');
+  selectPlan('pro');
+}
+
+function closeUpgrade() {
+  document.getElementById('upgrade-modal').classList.remove('show');
+  document.getElementById('upgrade-err').innerText = '';
+}
+
+function selectPlan(plan) {
+  state.selectedUpgradePlan = plan;
+  const cardFree = document.getElementById('plan-card-free');
+  const cardPro = document.getElementById('plan-card-pro');
+  const checkoutBtn = document.getElementById('checkout-btn');
+
+  if (plan === 'free') {
+    cardFree.classList.add('active-plan');
+    cardPro.classList.remove('active-plan');
+    checkoutBtn.innerText = "Keep Standard Tier";
+  } else {
+    cardPro.classList.add('active-plan');
+    cardFree.classList.remove('active-plan');
+    checkoutBtn.innerText = "Upgrade via Razorpay";
+  }
+}
+
+async function checkoutPro() {
+  if (!state.isLoggedIn) {
+    closeUpgrade();
+    openAuth('signup');
+    document.getElementById('auth-err').innerText = "Please authenticate before upgrading plan.";
+    return;
+  }
+  
+  if (state.selectedUpgradePlan === 'free') {
+    closeUpgrade();
+    return;
+  }
+
+  const btn = document.getElementById('checkout-btn');
+  btn.innerText = "Validating Payment Gateway Security...";
+  btn.disabled = true;
+
+  try {
+    const res = await fetch("/upgrade", { method: "POST" });
+    if (res.ok) {
+      showToast("Payment Complete! Welcome to Pro!");
+      closeUpgrade();
+      await checkSession();
+    } else {
+      document.getElementById('upgrade-err').innerText = "Upgrade transaction failed.";
+    }
+  } catch (e) {
+    document.getElementById('upgrade-err').innerText = "Network transmission error.";
+  } finally {
+    btn.innerText = "Upgrade via UPI / Razorpay";
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
+
+```
