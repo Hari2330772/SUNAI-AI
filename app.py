@@ -128,15 +128,26 @@ def save_user(user: dict):
 
 
 def get_today_usage(uid: str) -> int:
-    """Read today's usage count from the dedicated usage_counts table."""
     today = str(date.today())
-    res = (supabase.table("usage_counts")
-           .select("count")
-           .eq("user_id", uid)
-           .eq("day", today)
-           .maybe_single()
-           .execute())
-    return res.data["count"] if res.data else 0
+
+    try:
+        res = (
+            supabase.table("usage_counts")
+            .select("count")
+            .eq("user_id", uid)
+            .eq("day", today)
+            .maybe_single()
+            .execute()
+        )
+
+        if not res or not getattr(res, "data", None):
+            return 0
+
+        return res.data.get("count", 0)
+
+    except Exception as e:
+        print("get_today_usage:", e)
+        return 0
 
 
 def increment_usage(uid: str) -> int:
