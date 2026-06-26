@@ -36,6 +36,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 load_dotenv()
+BRIGHTDATA_API_KEY=os.getenv("BRIGHTDATA_API_KEY")
 
 # ── App setup ─────────────────────────────────────────────────────────────────
 app = Flask(__name__, template_folder='templates', static_folder='static')
