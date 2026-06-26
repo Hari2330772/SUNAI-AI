@@ -68,7 +68,7 @@ supabase: Client = create_client(
 groq_client = Groq(api_key=os.environ["GROQ_API_KEY"])
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 vision_model   = genai.GenerativeModel("gemini-1.5-flash")
-imagen_model   = genai.GenerativeModel("gemini-2.0-flash-preview-image-generation")
+imagen_model   = genai.GenerativeModel("gemini-2.5-flash-preview-image-generation")
 rzp_client = razorpay.Client(
     auth=(os.environ["RAZORPAY_KEY_ID"], os.environ["RAZORPAY_KEY_SECRET"])
 )
