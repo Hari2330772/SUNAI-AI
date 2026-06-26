@@ -594,7 +594,7 @@ async function loadHistory() {
       S.messages.push({ role, content: item.content });
       appendMsg(role === 'assistant' ? 'ai' : 'user', item.content);
     });
-    chatEl.scrollTop = chatEl.scrollHeight;
+    //chatEl.scrollTop = chatEl.scrollHeight;
     renderHistList();
   } catch (e) { console.error('loadHistory', e); }
 }
@@ -714,7 +714,7 @@ async function sendStream(userText) {
     <div class="ai-av"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></div>
     <div class="bubble"><div class="md" id="stream-md"></div><span class="typing-cursor" id="stream-cursor"></span></div>`;
   chatEl.appendChild(group);
-  chatEl.scrollTop = chatEl.scrollHeight;
+  //chatEl.scrollTop = chatEl.scrollHeight;
 
   const mdEl     = document.getElementById('stream-md');
   const cursorEl = document.getElementById('stream-cursor');
