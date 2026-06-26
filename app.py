@@ -60,7 +60,7 @@ rzp_client       = razorpay.Client(
 FREE_LIMIT           = 10
 HISTORY_LIMIT        = 100
 FREE_HISTORY_TTL_DAYS = 30
-GROQ_MODEL           = "llama-3.3-70b-versatile"
+GROQ_MODEL           = "llama-3.1-8b-instant"
 
 # Active stream abort flags: { stream_id: threading.Event }
 _abort_events: dict[str, threading.Event] = {}
