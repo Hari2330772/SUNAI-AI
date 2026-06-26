@@ -1,7 +1,8 @@
+# SUNAI v4.0 requirements
 flask>=3.0.0
 flask-cors>=4.0.0
 flask-limiter>=3.5.0
-groq>=0.5.0
+groq>=0.9.0
 python-dotenv>=1.0.0
 gunicorn>=21.0.0
 werkzeug>=3.0.0
