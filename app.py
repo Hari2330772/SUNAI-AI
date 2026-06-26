@@ -51,7 +51,7 @@ limiter = Limiter(key_func=get_remote_address, app=app,
 supabase: Client = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
 groq_client      = Groq(api_key=os.environ["GROQ_API_KEY"])
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY", ""))
-vision_model     = genai.GenerativeModel("gemini-1.5-flash")
+vision_model     = genai.GenerativeModel("gemini-2.5-flash")
 rzp_client       = razorpay.Client(
     auth=(os.environ.get("RAZORPAY_KEY_ID", ""),
           os.environ.get("RAZORPAY_KEY_SECRET", ""))
