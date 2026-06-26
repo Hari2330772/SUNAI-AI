@@ -265,7 +265,6 @@ def format_search_context(results: list[dict]) -> str:
 
 # ── Manual search endpoint (frontend can call directly) ───────────────────────
 @app.route("/search", methods=["POST"])
-@login_required
 @limiter.limit("30/minute")
 def search_endpoint():
     """
