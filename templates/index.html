@@ -3,1185 +3,321 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>SUNAI — Free AI Assistant | Ask Anything</title>
+<title>SUNAI v4 — Free AI Assistant</title>
 <meta name="description" content="SUNAI is a free AI assistant. Ask anything, upload images and files, get instant answers.">
-<meta name="keywords" content="SUNAI, AI assistant, free AI, chatbot India">
 
-<!-- Premium Typography -->
+<!-- Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<!-- KaTeX for High-Fidelity Mathematical Formula Rendering -->
+<!-- KaTeX -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" onload="renderMathInBody()"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
+<!-- Highlight.js — syntax highlighting -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+<!-- marked.js — full markdown parser -->
+<script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
 
 <style>
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  -webkit-tap-highlight-color: transparent;
-}
+/* ═══════════════════════════ RESET & TOKENS ═══════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 :root {
-  --sun: #FF6B00;
-  --sun-light: #FF8C3A;
-  --sun-glow: rgba(255, 107, 0, 0.25);
-  --bg: #09090B;
-  --s1: #18181B;
-  --s2: #27272A;
-  --s3: #3F3F46;
-  --border: rgba(255, 255, 255, 0.08);
-  --border-active: rgba(255, 107, 0, 0.3);
-  --text: #F4F4F5;
-  --muted: #A1A1AA;
-  --subtle: #71717A;
-  --green: #10B981;
-  --red: #EF4444;
-  --radius: 16px;
-  --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  --sun: #FF6B00; --sun-light: #FF8C3A; --sun-glow: rgba(255,107,0,.25);
+  --bg: #09090B; --s1: #18181B; --s2: #27272A; --s3: #3F3F46;
+  --border: rgba(255,255,255,.08); --border-active: rgba(255,107,0,.3);
+  --text: #F4F4F5; --muted: #A1A1AA; --subtle: #71717A;
+  --green: #10B981; --red: #EF4444; --blue: #3B82F6;
+  --radius: 16px; --ease: cubic-bezier(.16,1,.3,1);
 }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; }
+body { display: flex; flex-direction: column; max-width: 900px; margin: 0 auto; border-inline: 1px solid var(--border); }
 
-html, body {
-  height: 100%;
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  overflow: hidden;
-}
+/* ═══════════════════════════ SCROLLBAR ════════════════════════════════ */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-thumb { background: var(--s3); border-radius: 4px; }
 
-body {
-  display: flex;
-  flex-direction: column;
-  max-width: 900px;
-  margin: 0 auto;
-  position: relative;
-  border-left: 1px solid var(--border);
-  border-right: 1px solid var(--border);
-}
-
-/* ── HEADER ── */
+/* ═══════════════════════════ HEADER ══════════════════════════════════ */
 header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 20px;
-  flex-shrink: 0;
-  border-bottom: 1px solid var(--border);
-  background: rgba(9, 9, 11, 0.8);
-  backdrop-filter: blur(12px);
-  position: relative;
-  z-index: 10;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 18px; flex-shrink: 0; border-bottom: 1px solid var(--border);
+  background: rgba(9,9,11,.85); backdrop-filter: blur(14px); z-index: 10; position: relative;
 }
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
+.logo { display: flex; align-items: center; gap: 9px; }
 .orb {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
+  width: 30px; height: 30px; border-radius: 50%;
   background: linear-gradient(135deg, var(--sun), #FF3D00);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 0 16px var(--sun-glow);
-  position: relative;
-  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 14px var(--sun-glow); position: relative; overflow: hidden;
 }
 .orb::after {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 60%);
-  animation: rotateGlow 6s linear infinite;
+  content: ''; position: absolute; inset: -50%;
+  background: radial-gradient(circle, rgba(255,255,255,.35) 0%, transparent 60%);
+  animation: rotGlow 6s linear infinite;
 }
-@keyframes rotateGlow {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-.orb svg {
-  width: 16px;
-  height: 16px;
-  stroke: white;
-  fill: none;
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  position: relative;
-  z-index: 2;
-}
-.logo-name {
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-}
-.logo-name span {
-  color: var(--sun);
-}
-.hright {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.plan-pill {
-  font-size: 11px;
-  padding: 4px 10px;
-  border-radius: 20px;
-  background: rgba(255, 107, 0, 0.1);
-  color: var(--sun);
-  font-weight: 600;
-  border: 1px solid rgba(255, 107, 0, 0.25);
-  letter-spacing: 0.2px;
-}
-.plan-pill.free-pill {
-  background: var(--s1);
-  color: var(--muted);
-  border-color: var(--border);
-}
+@keyframes rotGlow { to { transform: rotate(360deg); } }
+.orb svg { width: 15px; height: 15px; stroke: #fff; fill: none; stroke-width: 2.5; stroke-linecap: round; position: relative; z-index: 2; }
+.logo-name { font-size: 17px; font-weight: 700; letter-spacing: -.5px; }
+.logo-name span { color: var(--sun); }
+.v-badge { font-size: 10px; background: var(--s2); border: 1px solid var(--s3); color: var(--subtle); padding: 2px 6px; border-radius: 6px; font-weight: 600; margin-left: 2px; }
+.hright { display: flex; align-items: center; gap: 6px; }
+.plan-pill { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; letter-spacing: .2px; border: 1px solid; }
+.plan-pill.free-pill { background: var(--s1); color: var(--muted); border-color: var(--border); }
+.plan-pill.pro-pill  { background: rgba(255,107,0,.1); color: var(--sun); border-color: rgba(255,107,0,.25); }
 .icon-btn {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--muted);
-  transition: var(--transition);
+  width: 36px; height: 36px; border-radius: 50%; background: transparent; border: none;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: var(--muted); transition: all .18s var(--ease);
 }
-.icon-btn:hover {
-  background: var(--s1);
-  color: var(--text);
+.icon-btn:hover { background: var(--s1); color: var(--text); }
+.icon-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+.text-btn {
+  padding: 6px 14px; border-radius: 10px; font-size: 13px; font-weight: 600;
+  border: none; cursor: pointer; transition: all .18s var(--ease);
 }
-.icon-btn svg {
-  width: 20px;
-  height: 20px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 2;
-  stroke-linecap: round;
-}
+.text-btn.ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+.text-btn.ghost:hover { background: var(--s1); color: var(--text); }
+.text-btn.primary { background: var(--sun); color: #fff; box-shadow: 0 0 10px var(--sun-glow); }
+.text-btn.primary:hover { background: var(--sun-light); }
+.text-btn.upgrade { background: rgba(255,107,0,.12); color: var(--sun-light); border: 1px solid rgba(255,107,0,.2); }
+.text-btn.upgrade:hover { background: var(--sun); color: #fff; }
 
-/* ── SIDEBAR HISTORY DRAWER ── */
-.drawer-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  z-index: 50;
-  backdrop-filter: blur(4px);
-  animation: fadeIn 0.2s ease-out;
-}
-.drawer-overlay.open {
-  display: block;
-}
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
+/* ═══════════════════════════ DRAWER ══════════════════════════════════ */
+.drawer-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 50; backdrop-filter: blur(4px); }
+.drawer-overlay.open { display: block; animation: fadeIn .2s ease-out; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .drawer {
-  position: fixed;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 300px;
-  background: #0D0D10;
-  z-index: 51;
-  transform: translateX(-100%);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  display: flex;
-  flex-direction: column;
-  border-right: 1px solid var(--border);
+  position: fixed; left: 0; top: 0; bottom: 0; width: 290px;
+  background: #0C0C0F; z-index: 51; border-right: 1px solid var(--border);
+  transform: translateX(-100%); transition: transform .3s var(--ease);
+  display: flex; flex-direction: column;
 }
-.drawer.open {
-  transform: translateX(0);
-}
-.drawer-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.drawer-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text);
-}
-.new-chat-btn {
-  font-size: 13px;
-  padding: 6px 14px;
-  border-radius: 10px;
-  background: var(--sun);
-  color: white;
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
-  transition: var(--transition);
-}
-.new-chat-btn:hover {
-  background: var(--sun-light);
-  box-shadow: 0 4px 12px var(--sun-glow);
-}
-.drawer-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px;
-}
-.drawer-body::-webkit-scrollbar {
-  width: 4px;
-}
-.drawer-body::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 4px;
-}
-.hist-date-label {
-  font-size: 11px;
-  color: var(--subtle);
-  padding: 10px 12px 6px;
-  text-transform: uppercase;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-}
-.hist-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: var(--transition);
-  margin-bottom: 3px;
-}
-.hist-item:hover {
-  background: var(--s1);
-}
-.hist-item-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: 1;
-  min-width: 0;
-}
-.hist-item svg {
-  width: 16px;
-  height: 16px;
-  stroke: var(--muted);
-  fill: none;
-  stroke-width: 2;
-  stroke-linecap: round;
-  flex-shrink: 0;
-}
-.hist-item span {
-  font-size: 13.5px;
-  color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.hist-item:hover span {
-  color: var(--text);
-}
-.hist-delete-btn {
-  background: transparent;
-  border: none;
-  color: var(--subtle);
-  cursor: pointer;
-  display: none;
-  padding: 2px;
-  border-radius: 4px;
-}
-.hist-item:hover .hist-delete-btn {
-  display: flex;
-}
-.hist-delete-btn:hover {
-  color: var(--red);
-  background: rgba(239, 68, 68, 0.1);
-}
-.drawer-footer {
-  padding: 16px 20px;
-  border-top: 1px solid var(--border);
-  background: #09090B;
-}
-.user-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.user-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--sun), var(--sun-light));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 700;
-  color: white;
-  flex-shrink: 0;
-  box-shadow: 0 0 10px rgba(255, 107, 0, 0.2);
-}
-.user-info {
-  flex: 1;
-  min-width: 0;
-}
-.user-name {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.user-plan {
-  font-size: 11px;
-  color: var(--muted);
-}
-.logout-btn {
-  width: 30px;
-  height: 30px;
-  border-radius: 6px;
-  color: var(--muted);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: var(--transition);
-}
-.logout-btn:hover {
-  color: var(--red);
-  background: rgba(239, 68, 68, 0.1);
-}
+.drawer.open { transform: translateX(0); }
+.drawer-header { padding: 15px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.drawer-title { font-size: 14px; font-weight: 600; }
+.new-chat-btn { font-size: 12px; padding: 5px 12px; border-radius: 8px; background: var(--sun); color: #fff; border: none; cursor: pointer; font-weight: 600; transition: all .18s var(--ease); }
+.new-chat-btn:hover { background: var(--sun-light); }
+.drawer-body { flex: 1; overflow-y: auto; padding: 10px; }
+.hist-label { font-size: 10.5px; color: var(--subtle); padding: 8px 10px 4px; text-transform: uppercase; font-weight: 600; letter-spacing: .5px; }
+.hist-item { display: flex; align-items: center; justify-content: space-between; padding: 9px 11px; border-radius: 9px; cursor: pointer; transition: all .15s; margin-bottom: 2px; }
+.hist-item:hover { background: var(--s1); }
+.hist-item-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.hist-item svg { width: 14px; height: 14px; stroke: var(--muted); fill: none; stroke-width: 2; flex-shrink: 0; }
+.hist-item span { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-item:hover span { color: var(--text); }
+.hist-del { background: transparent; border: none; color: var(--subtle); cursor: pointer; display: none; padding: 2px 4px; border-radius: 4px; }
+.hist-item:hover .hist-del { display: flex; }
+.hist-del:hover { color: var(--red); }
+.drawer-footer { padding: 14px 18px; border-top: 1px solid var(--border); }
+.user-row { display: flex; align-items: center; gap: 10px; }
+.user-av { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--sun), var(--sun-light)); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.user-info { flex: 1; min-width: 0; }
+.user-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-plan { font-size: 11px; color: var(--muted); }
+.logout-btn { width: 28px; height: 28px; border-radius: 6px; background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--muted); transition: all .15s; }
+.logout-btn:hover { color: var(--red); background: rgba(239,68,68,.1); }
 
-/* ── CHAT SCENE ── */
-#chat {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px 0 24px;
-  scroll-behavior: smooth;
-}
-#chat::-webkit-scrollbar {
-  width: 6px;
-}
-#chat::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-}
+/* ═══════════════════════════ USAGE BAR ════════════════════════════════ */
+.usage-strip { padding: 7px 18px 3px; display: none; flex-shrink: 0; }
+.usage-row { display: flex; align-items: center; gap: 10px; background: rgba(24,24,27,.5); border: 1px solid var(--border); padding: 8px 12px; border-radius: 10px; }
+.usage-label { font-size: 10.5px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; }
+.ubar { flex: 1; height: 4px; background: var(--s2); border-radius: 4px; overflow: hidden; }
+.ubar-fill { height: 100%; background: var(--sun); border-radius: 4px; transition: width .4s var(--ease); }
+.ubar-fill.warn { background: var(--red); }
+.usage-num { font-size: 11px; font-weight: 600; white-space: nowrap; }
+.up-chip { font-size: 11px; padding: 3px 9px; border-radius: 7px; background: rgba(255,107,0,.12); color: var(--sun-light); border: 1px solid rgba(255,107,0,.2); cursor: pointer; white-space: nowrap; font-weight: 600; transition: all .15s; }
+.up-chip:hover { background: var(--sun); color: #fff; }
 
-/* ── WELCOME & DEFAULT DISCOVERIES ── */
-#welcome {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 60vh;
-  padding: 24px 20px;
-  text-align: center;
-  gap: 16px;
-}
-.sun-hero {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--sun), #FF5000);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 0 32px var(--sun-glow);
-  margin-bottom: 8px;
-}
-.sun-hero svg {
-  width: 32px;
-  height: 32px;
-  stroke: white;
-  fill: none;
-  stroke-width: 2.5;
-}
-#welcome h1 {
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: -0.75px;
-}
-#welcome h1 span {
-  background: linear-gradient(135deg, var(--sun-light), var(--sun));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-#welcome p {
-  font-size: 14px;
-  color: var(--muted);
-  max-width: 380px;
-  line-height: 1.6;
-}
-.suggestions {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-  width: 100%;
-  max-width: 500px;
-  margin-top: 14px;
-}
-@media (min-width: 500px) {
-  .suggestions {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-.sug-btn {
-  text-align: left;
-  padding: 14px 16px;
-  background: var(--s1);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  color: var(--text);
-  font-size: 13px;
-  cursor: pointer;
-  transition: var(--transition);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 8px;
-}
-.sug-btn:hover {
-  background: var(--s2);
-  border-color: var(--border-active);
-  transform: translateY(-1px);
-}
-.sug-title {
-  font-weight: 600;
-  color: var(--text);
-}
-.sug-desc {
-  font-size: 11px;
-  color: var(--subtle);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-}
-.sug-desc svg {
-  width: 14px;
-  height: 14px;
-  stroke: var(--subtle);
-  fill: none;
-  stroke-width: 2;
-  transition: var(--transition);
-}
-.sug-btn:hover svg {
-  stroke: var(--sun);
-  transform: translateX(2px);
-}
+/* ═══════════════════════════ CHAT SCENE ══════════════════════════════ */
+#chat { flex: 1; overflow-y: auto; padding: 8px 0 20px; scroll-behavior: smooth; }
 
-/* ── CHAT BALLOONS ── */
-.msg-group {
-  padding: 16px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
-  animation: fadeUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.msg-group.user {
-  background: transparent;
-  display: flex;
-  justify-content: flex-end;
-}
-.msg-group.ai {
-  background: rgba(24, 24, 27, 0.3);
-  display: flex;
-  justify-content: flex-start;
-  gap: 16px;
-}
-.ai-av {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--sun);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  box-shadow: 0 0 10px rgba(255, 107, 0, 0.15);
-}
-.ai-av svg {
-  width: 16px;
-  height: 16px;
-  stroke: white;
-  fill: none;
-  stroke-width: 2.5;
-}
-.bubble {
-  max-width: 85%;
-  font-size: 15px;
-  line-height: 1.65;
-}
-.msg-group.user .bubble {
-  background: var(--s1);
-  padding: 12px 18px;
-  border-radius: 18px 18px 4px 18px;
-  border: 1px solid var(--border);
-  color: var(--text);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-.msg-group.ai .bubble {
-  color: var(--text);
-  width: 100%;
-}
+/* ── Welcome ── */
+#welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; padding: 24px 20px; text-align: center; gap: 14px; }
+.sun-hero { width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, var(--sun), #FF5000); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 28px var(--sun-glow); margin-bottom: 4px; }
+.sun-hero svg { width: 28px; height: 28px; stroke: #fff; fill: none; stroke-width: 2.5; }
+#welcome h1 { font-size: 26px; font-weight: 700; letter-spacing: -.75px; }
+#welcome h1 span { background: linear-gradient(135deg, var(--sun-light), var(--sun)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+#welcome p { font-size: 13.5px; color: var(--muted); max-width: 360px; line-height: 1.65; }
+.suggestions { display: grid; grid-template-columns: 1fr; gap: 9px; width: 100%; max-width: 480px; margin-top: 12px; }
+@media (min-width: 480px) { .suggestions { grid-template-columns: 1fr 1fr; } }
+.sug-btn { text-align: left; padding: 13px 15px; background: var(--s1); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 12.5px; cursor: pointer; transition: all .18s var(--ease); display: flex; flex-direction: column; gap: 7px; }
+.sug-btn:hover { background: var(--s2); border-color: var(--border-active); transform: translateY(-1px); }
+.sug-title { font-weight: 600; font-size: 13px; }
+.sug-desc { font-size: 11px; color: var(--subtle); display: flex; align-items: center; justify-content: space-between; }
+.sug-desc svg { width: 13px; height: 13px; stroke: var(--subtle); fill: none; stroke-width: 2; transition: all .15s; }
+.sug-btn:hover .sug-desc svg { stroke: var(--sun); transform: translateX(2px); }
 
-/* Dynamic HTML Markdown elements */
-.markdown-payload p {
-  margin-bottom: 12px;
-}
-.markdown-payload p:last-child {
-  margin-bottom: 0;
-}
-.markdown-payload strong {
-  color: var(--sun-light);
-  font-weight: 600;
-}
-.markdown-payload ul, .markdown-payload ol {
-  margin: 8px 0 16px 20px;
-}
-.markdown-payload li {
-  margin-bottom: 6px;
-}
-.markdown-payload code {
-  background: rgba(255, 107, 0, 0.1);
-  color: #FF8C3A;
-  padding: 3px 6px;
-  border-radius: 6px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
-}
-.code-block-container {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: #09090B;
-  overflow: hidden;
-  margin: 14px 0;
-}
-.code-block-header {
-  background: #121214;
-  padding: 8px 14px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--border);
-  font-size: 11px;
-  color: var(--muted);
-  font-family: 'JetBrains Mono', monospace;
-  text-transform: uppercase;
-}
-.copy-code-btn {
-  background: transparent;
-  border: none;
-  color: var(--muted);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-}
-.copy-code-btn:hover {
-  color: var(--text);
-}
-.markdown-payload pre {
-  padding: 14px;
-  overflow-x: auto;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
-  line-height: 1.5;
-  color: #ECECEF;
-}
+/* ── Message groups ── */
+.msg-group { padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,.02); animation: fadeUp .28s var(--ease); }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+.msg-group.user { display: flex; justify-content: flex-end; }
+.msg-group.ai   { display: flex; gap: 14px; background: rgba(24,24,27,.28); }
+.ai-av { width: 30px; height: 30px; border-radius: 50%; background: var(--sun); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 8px rgba(255,107,0,.15); margin-top: 2px; }
+.ai-av svg { width: 14px; height: 14px; stroke: #fff; fill: none; stroke-width: 2.5; }
+.bubble { max-width: 86%; font-size: 14.5px; line-height: 1.65; }
+.msg-group.user .bubble { background: var(--s1); padding: 11px 17px; border-radius: 18px 18px 4px 18px; border: 1px solid var(--border); }
+.msg-group.ai .bubble { color: var(--text); width: 100%; }
 
-.img-preview {
-  max-width: 280px;
-  width: 100%;
-  border-radius: 12px;
-  margin-bottom: 8px;
-  display: block;
-  border: 1px solid var(--border);
-}
+/* ── Markdown payload ── */
+.md p { margin-bottom: 10px; }
+.md p:last-child { margin-bottom: 0; }
+.md strong { color: var(--sun-light); font-weight: 600; }
+.md em { color: var(--muted); font-style: italic; }
+.md ul, .md ol { margin: 6px 0 12px 20px; }
+.md li { margin-bottom: 5px; }
+.md h1,.md h2,.md h3 { color: var(--text); font-weight: 700; margin: 14px 0 6px; letter-spacing: -.3px; }
+.md h1 { font-size: 18px; } .md h2 { font-size: 16px; } .md h3 { font-size: 14.5px; }
+.md blockquote { border-left: 3px solid var(--sun); padding-left: 12px; color: var(--muted); margin: 10px 0; font-style: italic; }
+.md hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+.md table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.md th,.md td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; }
+.md th { background: var(--s1); color: var(--sun-light); font-weight: 600; }
+.md a { color: var(--sun-light); text-decoration: none; }
+.md a:hover { text-decoration: underline; }
+.md code:not(pre code) { background: rgba(255,107,0,.1); color: #FF8C3A; padding: 2px 6px; border-radius: 5px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; }
 
-/* Streaming Loader Dots */
-.typing {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  padding: 8px 4px;
-}
-.dot {
-  width: 7px;
-  height: 7px;
-  background: var(--muted);
-  border-radius: 50%;
-  animation: bop 1.4s ease-in-out infinite;
-}
-.dot:nth-child(2) { animation-delay: 0.2s; }
-.dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes bop {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-  30% { transform: translateY(-6px); opacity: 1; }
-}
+/* ── Code blocks (highlight.js) ── */
+.code-wrap { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 12px 0; background: #0D0D0F; }
+.code-head { display: flex; align-items: center; justify-content: space-between; padding: 7px 13px; background: #111114; border-bottom: 1px solid var(--border); font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+.copy-btn { display: flex; align-items: center; gap: 4px; background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 11px; font-family: 'JetBrains Mono', monospace; transition: color .15s; padding: 2px 6px; border-radius: 4px; }
+.copy-btn:hover { color: var(--text); background: var(--s2); }
+.copy-btn svg { width: 11px; height: 11px; stroke: currentColor; fill: none; stroke-width: 2; }
+.code-wrap pre { margin: 0 !important; padding: 14px !important; overflow-x: auto; font-size: 12.5px; line-height: 1.55; background: transparent !important; }
+.code-wrap pre code { font-family: 'JetBrains Mono', monospace !important; background: transparent !important; padding: 0 !important; font-size: 12.5px !important; }
 
-/* ── FLOATING ATTACHMENT ACTION STRIP ── */
-#attach-bar {
-  display: none;
-  padding: 8px 20px 0;
-  animation: slideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-@keyframes slideDown {
-  from { transform: translateY(-10px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-.attach-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--s1);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 8px 14px;
-  max-width: 100%;
-}
-.attach-chip img {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  object-fit: cover;
-  border: 1px solid var(--border);
-}
-.attach-chip .file-icon {
-  width: 40px;
-  height: 40px;
-  background: rgba(255, 107, 0, 0.1);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(255, 107, 0, 0.15);
-}
-.attach-chip .file-icon svg {
-  width: 20px;
-  height: 20px;
-  stroke: var(--sun);
-  fill: none;
-  stroke-width: 2;
-}
-.attach-chip .attach-info {
-  flex: 1;
-  min-width: 0;
-}
-.attach-chip .attach-name {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 180px;
-}
-.attach-chip .attach-type {
-  font-size: 11px;
-  color: var(--subtle);
-}
-.attach-chip .remove-btn {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--s2);
-  border: none;
-  color: var(--muted);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  flex-shrink: 0;
-  transition: var(--transition);
-}
-.attach-chip .remove-btn:hover {
-  background: var(--s3);
-  color: var(--text);
-}
+/* ── Typing cursor (streaming) ── */
+.typing-cursor { display: inline-block; width: 2px; height: 1em; background: var(--sun); margin-left: 2px; vertical-align: text-bottom; animation: blink .7s step-end infinite; border-radius: 1px; }
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
 
-/* ── INPUT SYSTEM ── */
-.input-area {
-  padding: 10px 20px 24px;
-  flex-shrink: 0;
-}
-.input-box {
-  background: var(--s1);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  transition: var(--transition);
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-}
-.input-box:focus-within {
-  border-color: var(--border-active);
-  box-shadow: 0 4px 24px rgba(255, 107, 0, 0.08);
-}
-.input-top {
-  display: flex;
-  align-items: flex-end;
-  padding: 12px 14px;
-  gap: 12px;
-}
-textarea {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: var(--text);
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 15px;
-  resize: none;
-  max-height: 140px;
-  min-height: 24px;
-  line-height: 1.5;
-  padding: 0;
-}
-textarea::placeholder {
-  color: var(--subtle);
-}
-.send-btn {
-  width: 36px;
-  height: 36px;
-  background: var(--sun);
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: var(--transition);
-  box-shadow: 0 0 10px var(--sun-glow);
-}
-.send-btn:hover {
-  background: var(--sun-light);
-  transform: scale(1.05);
-}
-.send-btn:disabled {
-  opacity: 0.25;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-.send-btn svg {
-  width: 16px;
-  height: 16px;
-  stroke: white;
-  fill: none;
-  stroke-width: 2.5;
-}
-.input-bottom {
-  display: flex;
-  align-items: center;
-  padding: 0 12px 12px;
-  gap: 6px;
-}
-.att-btn {
-  width: 34px;
-  height: 34px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  transition: var(--transition);
-  color: var(--muted);
-}
-.att-btn:hover {
-  background: var(--s2);
-  color: var(--text);
-}
-.att-btn svg {
-  width: 18px;
-  height: 18px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 2;
-}
-.input-hint {
-  flex: 1;
-  text-align: right;
-  font-size: 11px;
-  color: var(--subtle);
-  padding-right: 6px;
-}
-input[type=file] {
-  display: none;
-}
+/* ── Loading dots (initial) ── */
+.typing-dots { display: flex; gap: 5px; align-items: center; padding: 6px 0; }
+.dot { width: 6px; height: 6px; background: var(--muted); border-radius: 50%; animation: bop 1.3s ease-in-out infinite; }
+.dot:nth-child(2) { animation-delay: .18s; }
+.dot:nth-child(3) { animation-delay: .36s; }
+@keyframes bop { 0%,60%,100% { transform: translateY(0); opacity: .4; } 30% { transform: translateY(-5px); opacity: 1; } }
 
-/* ── DAILY USAGE PANEL INDICATORS ── */
-.usage-strip {
-  padding: 8px 20px 4px;
-  display: none;
-}
-.usage-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: rgba(24, 24, 27, 0.5);
-  border: 1px solid var(--border);
-  padding: 10px 14px;
-  border-radius: 12px;
-}
-.usage-label {
-  font-size: 11px;
-  color: var(--muted);
-  white-space: nowrap;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-.ubar {
-  flex: 1;
-  height: 4px;
-  background: var(--s2);
-  border-radius: 4px;
-  overflow: hidden;
-}
-.ubar-fill {
-  height: 100%;
-  background: var(--sun);
-  border-radius: 4px;
-  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.ubar-fill.warn {
-  background: var(--red);
-}
-.usage-num {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text);
-  white-space: nowrap;
-}
-.up-chip {
-  font-size: 11px;
-  padding: 4px 10px;
-  border-radius: 8px;
-  background: rgba(255, 107, 0, 0.15);
-  color: var(--sun-light);
-  border: 1px solid rgba(255, 107, 0, 0.2);
-  cursor: pointer;
-  white-space: nowrap;
-  font-weight: 600;
-  transition: var(--transition);
-}
-.up-chip:hover {
-  background: var(--sun);
-  color: white;
-}
+/* ── Image preview ── */
+.img-preview { max-width: 260px; width: 100%; border-radius: 10px; margin-bottom: 8px; display: block; border: 1px solid var(--border); }
 
-/* ── DIALOG OVERLAY SYSTEM ── */
-.overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  z-index: 100;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(8px);
-  padding: 16px;
-}
-.overlay.show {
-  display: flex;
-}
-.modal {
-  background: #0E0E11;
-  border-radius: 20px;
-  border: 1px solid var(--border);
-  padding: 24px;
-  width: 100%;
-  max-width: 460px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-  animation: modalScaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-@keyframes modalScaleUp {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-.modal-handle {
-  display: none;
-}
+/* ── Attach bar ── */
+#attach-bar { display: none; padding: 6px 18px 0; }
+.attach-chip { display: inline-flex; align-items: center; gap: 9px; background: var(--s1); border: 1px solid var(--border); border-radius: 11px; padding: 7px 12px; max-width: 100%; }
+.attach-chip img { width: 38px; height: 38px; border-radius: 7px; object-fit: cover; border: 1px solid var(--border); }
+.file-icon { width: 38px; height: 38px; background: rgba(255,107,0,.1); border-radius: 7px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,107,0,.15); }
+.file-icon svg { width: 18px; height: 18px; stroke: var(--sun); fill: none; stroke-width: 2; }
+.attach-info { flex: 1; min-width: 0; }
+.attach-name { font-size: 12.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 175px; }
+.attach-type { font-size: 10.5px; color: var(--subtle); }
+.remove-btn { width: 20px; height: 20px; border-radius: 50%; background: var(--s2); border: none; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; transition: all .15s; flex-shrink: 0; }
+.remove-btn:hover { background: var(--s3); color: var(--text); }
+
+/* ═══════════════════════════ INPUT AREA ══════════════════════════════ */
+.input-area { padding: 8px 18px 22px; flex-shrink: 0; }
+.input-box { background: var(--s1); border-radius: var(--radius); border: 1px solid var(--border); transition: all .2s var(--ease); overflow: hidden; box-shadow: 0 4px 18px rgba(0,0,0,.18); }
+.input-box:focus-within { border-color: var(--border-active); box-shadow: 0 4px 22px rgba(255,107,0,.07); }
+.input-top { display: flex; align-items: flex-end; padding: 11px 13px; gap: 10px; }
+textarea { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14.5px; resize: none; max-height: 140px; min-height: 24px; line-height: 1.5; }
+textarea::placeholder { color: var(--subtle); }
+.send-btn { width: 34px; height: 34px; background: var(--sun); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .18s var(--ease); box-shadow: 0 0 8px var(--sun-glow); }
+.send-btn:hover { background: var(--sun-light); transform: scale(1.06); }
+.send-btn:disabled { opacity: .25; cursor: not-allowed; transform: none; box-shadow: none; }
+.send-btn svg { width: 15px; height: 15px; stroke: #fff; fill: none; stroke-width: 2.5; }
+/* Stop button */
+.stop-btn { width: 34px; height: 34px; background: var(--s2); border: 1px solid var(--border); border-radius: 50%; cursor: pointer; display: none; align-items: center; justify-content: center; flex-shrink: 0; transition: all .18s var(--ease); }
+.stop-btn:hover { background: rgba(239,68,68,.15); border-color: rgba(239,68,68,.3); }
+.stop-btn svg { width: 13px; height: 13px; fill: var(--muted); }
+.stop-btn.visible { display: flex; }
+.input-bottom { display: flex; align-items: center; padding: 0 11px 10px; gap: 5px; }
+.att-btn { width: 32px; height: 32px; background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 7px; transition: all .15s; color: var(--muted); }
+.att-btn:hover { background: var(--s2); color: var(--text); }
+.att-btn svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2; }
+.input-hint { flex: 1; text-align: right; font-size: 10.5px; color: var(--subtle); padding-right: 4px; }
+input[type=file] { display: none; }
+
+/* ═══════════════════════════ MODALS ══════════════════════════════════ */
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.72); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(8px); padding: 16px; }
+.overlay.show { display: flex; }
+.modal { background: #0E0E11; border-radius: 20px; border: 1px solid var(--border); padding: 24px; width: 100%; max-width: 450px; box-shadow: 0 20px 40px rgba(0,0,0,.4); animation: scaleUp .28s var(--ease); }
+@keyframes scaleUp { from { transform: scale(.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @media (max-width: 480px) {
-  .overlay {
-    align-items: flex-end;
-    padding: 0;
-  }
-  .modal {
-    border-radius: 24px 24px 0 0;
-    padding: 24px 20px 36px;
-    animation: slideUpModal 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  .modal-handle {
-    display: block;
-    width: 40px;
-    height: 4px;
-    background: var(--s3);
-    border-radius: 4px;
-    margin: -12px auto 20px;
-  }
+  .overlay { align-items: flex-end; padding: 0; }
+  .modal { border-radius: 22px 22px 0 0; padding: 22px 18px 34px; animation: slideUp .28s var(--ease); }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 }
-@keyframes slideUpModal {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
-.modal h2 {
-  font-size: 22px;
-  font-weight: 700;
-  margin-bottom: 6px;
-  letter-spacing: -0.5px;
-}
-.modal h2 span {
-  color: var(--sun);
-}
-.modal-sub {
-  font-size: 13.5px;
-  color: var(--muted);
-  margin-bottom: 20px;
-  line-height: 1.5;
-}
-.mtab {
-  display: flex;
-  background: var(--s1);
-  border-radius: 12px;
-  padding: 4px;
-  margin-bottom: 20px;
-  border: 1px solid var(--border);
-}
-.mtab button {
-  flex: 1;
-  padding: 10px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--muted);
-  font-size: 13.5px;
-  cursor: pointer;
-  transition: var(--transition);
-  font-weight: 600;
-}
-.mtab button.active {
-  background: var(--s2);
-  color: var(--text);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-.field {
-  margin-bottom: 16px;
-}
-.field label {
-  font-size: 12px;
-  color: var(--muted);
-  display: block;
-  margin-bottom: 6px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-.field input {
-  width: 100%;
-  background: var(--s1);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px 14px;
-  color: var(--text);
-  font-size: 14.5px;
-  outline: none;
-  transition: var(--transition);
-  font-family: 'Plus Jakarta Sans', sans-serif;
-}
-.field input:focus {
-  border-color: var(--sun);
-  background: #121215;
-}
-.merr {
-  font-size: 12.5px;
-  color: var(--red);
-  min-height: 18px;
-  text-align: center;
-  margin-bottom: 12px;
-  font-weight: 500;
-}
-.mbtn {
-  width: 100%;
-  padding: 14px;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  transition: var(--transition);
-}
-.mbtn.primary {
-  background: var(--sun);
-  color: white;
-  box-shadow: 0 4px 16px var(--sun-glow);
-}
-.mbtn.primary:hover {
-  background: var(--sun-light);
-  transform: translateY(-1px);
-}
-.mbtn.ghost {
-  background: transparent;
-  color: var(--muted);
-  border: 1px solid var(--border);
-  margin-top: 8px;
-}
-.mbtn.ghost:hover {
-  background: var(--s1);
-  color: var(--text);
-}
-.switch-text {
-  font-size: 13px;
-  color: var(--muted);
-  text-align: center;
-  margin-top: 16px;
-}
-.switch-text a {
-  color: var(--sun-light);
-  cursor: pointer;
-  font-weight: 600;
-}
-.switch-text a:hover {
-  text-decoration: underline;
-}
+.modal-handle { display: none; }
+@media (max-width: 480px) { .modal-handle { display: block; width: 38px; height: 4px; background: var(--s3); border-radius: 4px; margin: -10px auto 18px; } }
+.modal h2 { font-size: 20px; font-weight: 700; margin-bottom: 5px; letter-spacing: -.4px; }
+.modal h2 span { color: var(--sun); }
+.modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 18px; line-height: 1.55; }
+.mtab { display: flex; background: var(--s1); border-radius: 11px; padding: 3px; margin-bottom: 18px; border: 1px solid var(--border); }
+.mtab button { flex: 1; padding: 9px; border: none; border-radius: 8px; background: transparent; color: var(--muted); font-size: 13px; cursor: pointer; transition: all .15s; font-weight: 600; font-family: 'Plus Jakarta Sans', sans-serif; }
+.mtab button.active { background: var(--s2); color: var(--text); }
+.field { margin-bottom: 14px; }
+.field label { font-size: 11.5px; color: var(--muted); display: block; margin-bottom: 5px; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; }
+.field input { width: 100%; background: var(--s1); border: 1px solid var(--border); border-radius: 11px; padding: 11px 13px; color: var(--text); font-size: 14px; outline: none; transition: all .18s; font-family: 'Plus Jakarta Sans', sans-serif; }
+.field input:focus { border-color: var(--sun); }
+.merr { font-size: 12px; color: var(--red); min-height: 16px; text-align: center; margin-bottom: 10px; font-weight: 500; }
+.mbtn { width: 100%; padding: 13px; border-radius: 11px; font-size: 14.5px; font-weight: 600; border: none; cursor: pointer; transition: all .18s var(--ease); font-family: 'Plus Jakarta Sans', sans-serif; }
+.mbtn.primary { background: var(--sun); color: #fff; box-shadow: 0 4px 14px var(--sun-glow); }
+.mbtn.primary:hover { background: var(--sun-light); }
+.mbtn.ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); margin-top: 7px; }
+.mbtn.ghost:hover { background: var(--s1); color: var(--text); }
+.switch-text { font-size: 12.5px; color: var(--muted); text-align: center; margin-top: 14px; }
+.switch-text a { color: var(--sun-light); cursor: pointer; font-weight: 600; }
 
-/* ── PLAN SELECTION SCHEME ── */
-.plan-row {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-@media (min-width: 400px) {
-  .plan-row {
-    flex-direction: row;
-  }
-}
-.plan-card {
-  flex: 1;
-  background: var(--s1);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 16px;
-  cursor: pointer;
-  transition: var(--transition);
-}
-.plan-card.active-plan {
-  border-color: var(--sun);
-  background: rgba(255, 107, 0, 0.04);
-}
-.plan-card .plan-name {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--muted);
-  margin-bottom: 6px;
-  text-transform: uppercase;
-}
-.plan-card.active-plan .plan-name {
-  color: var(--sun-light);
-}
-.plan-card .plan-price {
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--text);
-}
-.plan-card .plan-price span {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--muted);
-}
-.plan-card ul {
-  font-size: 12px;
-  color: var(--muted);
-  list-style: none;
-  margin-top: 12px;
-}
-.plan-card ul li {
-  margin-bottom: 6px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.plan-card ul li::before {
-  content: "✓";
-  color: var(--green);
-  font-weight: bold;
-}
+/* Plan cards */
+.plan-row { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+@media (min-width: 380px) { .plan-row { flex-direction: row; } }
+.plan-card { flex: 1; background: var(--s1); border: 1px solid var(--border); border-radius: 13px; padding: 14px; cursor: pointer; transition: all .18s; }
+.plan-card.sel { border-color: var(--sun); background: rgba(255,107,0,.04); }
+.plan-card .pname { font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; }
+.plan-card.sel .pname { color: var(--sun-light); }
+.plan-card .pprice { font-size: 20px; font-weight: 800; }
+.plan-card .pprice span { font-size: 11px; font-weight: 500; color: var(--muted); }
+.plan-card ul { font-size: 11.5px; color: var(--muted); list-style: none; margin-top: 10px; }
+.plan-card ul li { margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
+.plan-card ul li::before { content: "✓"; color: var(--green); font-weight: 700; }
 
-/* Custom Notification Toast Banner */
-.toast-container {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #18181B;
-  color: #FFFFFF;
-  padding: 12px 20px;
-  border-radius: 30px;
-  border: 1px solid var(--border);
-  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-  font-size: 13.5px;
-  font-weight: 500;
-  z-index: 1000;
-  pointer-events: none;
-  opacity: 0;
-  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
-}
-.toast-container.show {
-  transform: translate(-50%, -10px);
-  opacity: 1;
-}
+/* Toast */
+.toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: #18181B; color: #fff; padding: 10px 18px; border-radius: 28px; border: 1px solid var(--border); box-shadow: 0 8px 22px rgba(0,0,0,.45); font-size: 13px; font-weight: 500; z-index: 1000; pointer-events: none; opacity: 0; transition: transform .28s cubic-bezier(.175,.885,.32,1.275), opacity .28s; }
+.toast.show { transform: translate(-50%, -8px); opacity: 1; }
 </style>
 </head>
 <body>
 
-<!-- COLLAPSED SIDEBAR BACKGROUND BLUR -->
+<!-- Drawer overlay -->
 <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
 
-<!-- SIDEBAR NAVIGATION DRAWER -->
+<!-- Sidebar Drawer -->
 <div class="drawer" id="drawer">
   <div class="drawer-header">
     <span class="drawer-title">History</span>
-    <button class="new-chat-btn" onclick="newChat()">+ New</button>
+    <button class="new-chat-btn" onclick="newChat()">+ New Chat</button>
   </div>
   <div class="drawer-body" id="hist-body">
-    <div style="font-size:13.5px;color:var(--muted);text-align:center;padding:32px 16px;line-height:1.7">Sign in to save<br>conversations permanently.</div>
+    <div style="font-size:13px;color:var(--muted);text-align:center;padding:28px 14px;line-height:1.7">Sign in to save<br>conversations permanently.</div>
   </div>
   <div class="drawer-footer" id="drawer-footer" style="display:none">
     <div class="user-row">
-      <div class="user-avatar" id="drawer-av">U</div>
+      <div class="user-av" id="drawer-av">U</div>
       <div class="user-info">
         <div class="user-name" id="drawer-name">User</div>
         <div class="user-plan" id="drawer-plan">Free plan</div>
       </div>
       <button class="logout-btn" onclick="logout()" title="Logout">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:15px;height:15px"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       </button>
     </div>
   </div>
 </div>
 
-<!-- HEADER BAR -->
+<!-- Header -->
 <header>
-  <div style="display:flex;align-items:center;gap:8px">
-    <button class="icon-btn" onclick="openDrawer()" aria-label="Open History Drawer">
+  <div style="display:flex;align-items:center;gap:7px">
+    <button class="icon-btn" onclick="openDrawer()">
       <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
     <div class="logo">
@@ -1189,17 +325,18 @@ input[type=file] {
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
       </div>
       <span class="logo-name">SUN<span>AI</span></span>
+      <span class="v-badge">v4.0</span>
     </div>
   </div>
   <div class="hright">
     <span id="plan-pill" class="plan-pill free-pill" style="display:none"></span>
-    <button class="icon-btn" id="btn-login" onclick="openAuth('login')" style="width:auto;padding:0 14px;border-radius:10px;font-size:13px;color:var(--muted);font-weight:600">Login</button>
-    <button class="icon-btn" id="btn-signup" onclick="openAuth('signup')" style="width:auto;padding:0 14px;border-radius:10px;font-size:13px;background:var(--sun);color:white;font-weight:600">Sign Up</button>
-    <button class="icon-btn" id="btn-upgrade" style="display:none;width:auto;padding:0 14px;border-radius:10px;font-size:13px;background:rgba(255,107,0,0.15);color:var(--sun-light);font-weight:600" onclick="openUpgrade()">⚡ Upgrade</button>
+    <button class="text-btn ghost" id="btn-login"   onclick="openAuth('login')"  style="display:none">Login</button>
+    <button class="text-btn primary" id="btn-signup" onclick="openAuth('signup')" style="display:none">Sign Up</button>
+    <button class="text-btn upgrade" id="btn-upgrade" style="display:none" onclick="openUpgrade()">⚡ Upgrade</button>
   </div>
 </header>
 
-<!-- PROGRESS BAR FOR USAGE THRESHOLDS -->
+<!-- Usage strip -->
 <div class="usage-strip" id="usage-strip">
   <div class="usage-row">
     <span class="usage-label">Daily queries</span>
@@ -1209,811 +346,739 @@ input[type=file] {
   </div>
 </div>
 
-<!-- CENTRAL CONVERSATION FIELD -->
+<!-- Chat -->
 <div id="chat">
   <div id="welcome">
     <div class="sun-hero">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
     </div>
     <h1>Ask anything to <span>SUNAI</span></h1>
-    <p>Your ultimate free AI assistant optimized for coding architecture, logical science, career development, and document translations.</p>
-    
+    <p>Your free AI assistant for coding, science, career, math and more. Now with real-time streaming.</p>
     <div class="suggestions">
       <button class="sug-btn" onclick="q('What is machine learning and how does it work?')">
         <span class="sug-title">What is machine learning?</span>
-        <span class="sug-desc">A conceptual explanation of core methodologies.<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+        <span class="sug-desc">Core concepts explained simply<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
       </button>
-      <button class="sug-btn" onclick="q('Write a Python binary search function with explanations')">
-        <span class="sug-title">Write Python Binary Search</span>
-        <span class="sug-desc">Get structured logic with complexities.<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+      <button class="sug-btn" onclick="q('Write a Python binary search function with step-by-step explanation')">
+        <span class="sug-title">Python Binary Search</span>
+        <span class="sug-desc">Code with complexity analysis<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
       </button>
       <button class="sug-btn" onclick="q('How do I structure a world-class system architect resume?')">
-        <span class="sug-title">Structure Architect Resume</span>
-        <span class="sug-desc">Get sections and layout structures.<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+        <span class="sug-title">Architect Resume Guide</span>
+        <span class="sug-desc">Sections, layout and tips<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
       </button>
-      <button class="sug-btn" onclick="q('Explain neural networks in simple words')">
+      <button class="sug-btn" onclick="q('Explain neural networks with a simple analogy')">
         <span class="sug-title">Neural Networks Explained</span>
-        <span class="sug-desc">Layman concepts and network models.<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+        <span class="sug-desc">Beginner-friendly walkthrough<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
       </button>
     </div>
   </div>
 </div>
 
-<!-- FILE PREVIEW STRIP ABOVE INPUT -->
+<!-- Attachment preview -->
 <div id="attach-bar">
   <div class="attach-chip">
-    <img id="ap-img" style="display:none" alt="Attached image preview">
-    <div class="file-icon" id="ap-file-icon" style="display:none">
+    <img id="ap-img" style="display:none" alt="Preview">
+    <div class="file-icon" id="ap-icon" style="display:none">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
     </div>
     <div class="attach-info">
-      <div class="attach-name" id="ap-name">Document.pdf</div>
-      <div class="attach-type" id="ap-type">PDF File</div>
+      <div class="attach-name" id="ap-name">File</div>
+      <div class="attach-type" id="ap-type">Attachment</div>
     </div>
-    <button class="remove-btn" onclick="removeAttach()" aria-label="Remove attachment">×</button>
+    <button class="remove-btn" onclick="removeAttach()">×</button>
   </div>
 </div>
 
-<!-- CHAT ACTIONS BOX FOOTER -->
+<!-- Input -->
 <div class="input-area">
   <div class="input-box">
     <div class="input-top">
-      <textarea id="inp" rows="1" placeholder="Ask SUNAI anything..." onkeydown="onKey(event)" oninput="grow(this)"></textarea>
-      <button class="send-btn" id="snd" onclick="send()" aria-label="Send Message">
+      <textarea id="inp" rows="1" placeholder="Ask SUNAI anything…" onkeydown="onKey(event)" oninput="grow(this)"></textarea>
+      <button class="stop-btn" id="stop-btn" onclick="stopGeneration()" title="Stop generating">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+      </button>
+      <button class="send-btn" id="snd" onclick="send()">
         <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       </button>
     </div>
     <div class="input-bottom">
-      <button class="att-btn" onclick="document.getElementById('img-inp').click()" title="Attach Image">
+      <button class="att-btn" onclick="document.getElementById('img-inp').click()" title="Attach image">
         <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
       </button>
-      <button class="att-btn" onclick="document.getElementById('file-inp').click()" title="Attach Document">
+      <button class="att-btn" onclick="document.getElementById('file-inp').click()" title="Attach document">
         <svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
       </button>
-      <span class="input-hint">SUNAI Engine 3.0 · Enter to Send</span>
+      <span class="input-hint">SUNAI v4.0 · Streaming · Enter to send</span>
     </div>
   </div>
 </div>
 
-<input type="file" id="img-inp" accept="image/*" onchange="attachImg(this)">
+<input type="file" id="img-inp"  accept="image/*" onchange="attachImg(this)">
 <input type="file" id="file-inp" accept=".pdf,.txt,.py,.js,.html,.css,.csv,.md" onchange="attachFile(this)">
 
-<!-- FLOATING TOAST GRAPHIC -->
-<div class="toast-container" id="toast">Copied to Clipboard!</div>
+<!-- Toast -->
+<div class="toast" id="toast">Copied!</div>
 
-<!-- LOGIN / REGISTRATION DIALOG MODAL -->
+<!-- Auth modal -->
 <div class="overlay" id="auth-modal">
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="mtab">
       <button id="tab-signup" class="active" onclick="switchTab('signup')">Sign Up</button>
-      <button id="tab-login" onclick="switchTab('login')">Log In</button>
+      <button id="tab-login"               onclick="switchTab('login')">Log In</button>
     </div>
     <h2 id="auth-title">Create account</h2>
-    <p class="modal-sub" id="auth-sub">Unlock chat persistence, high-fidelity processing speeds, and maximum attachment analysis options.</p>
-    
-    <div class="field" id="field-name">
-      <label>Name</label>
-      <input type="text" id="auth-name" placeholder="John Doe">
-    </div>
-    <div class="field">
-      <label>Email address</label>
-      <input type="email" id="auth-email" placeholder="you@domain.com">
-    </div>
-    <div class="field">
-      <label>Password</label>
-      <input type="password" id="auth-password" placeholder="••••••••">
-    </div>
-    
+    <p class="modal-sub" id="auth-sub">Unlock chat history, faster speeds and file analysis.</p>
+    <div class="field" id="field-name"><label>Name</label><input type="text"      id="auth-name"     placeholder="John Doe"></div>
+    <div class="field">               <label>Email</label><input type="email"     id="auth-email"    placeholder="you@domain.com"></div>
+    <div class="field">               <label>Password</label><input type="password" id="auth-password" placeholder="Min 8 characters"></div>
     <div class="merr" id="auth-err"></div>
-    <button class="mbtn primary" id="auth-submit-btn" onclick="submitAuth()">Create Account</button>
-    <button class="mbtn ghost" onclick="closeAuth()">Cancel</button>
+    <button class="mbtn primary" id="auth-submit" onclick="submitAuth()">Create Account</button>
+    <button class="mbtn ghost"                    onclick="closeAuth()">Cancel</button>
     <div class="switch-text" id="auth-switch">Already have an account? <a onclick="switchTab('login')">Log in</a></div>
   </div>
 </div>
 
-<!-- PLAN UPGRADE SUBSCRIPTION SYSTEM MODAL -->
+<!-- Upgrade modal -->
 <div class="overlay" id="upgrade-modal">
   <div class="modal">
     <div class="modal-handle"></div>
     <h2>Upgrade to <span>SUNAI Pro</span></h2>
-    <p class="modal-sub">Break barriers! Get limitless access with high-fidelity performance and full context file parses.</p>
-    
+    <p class="modal-sub">Unlimited queries, 10× speed, full document analysis.</p>
     <div class="plan-row">
-      <div class="plan-card" id="plan-card-free" onclick="selectPlan('free')">
-        <div class="plan-name">Free Plan</div>
-        <div class="plan-price">₹0<span>/mo</span></div>
-        <ul>
-          <li>{{ free_limit }} queries daily</li>
-          <li>Standard AI Speed</li>
-          <li>Basic file attachments</li>
-        </ul>
+      <div class="plan-card" id="card-free" onclick="selectPlan('free')">
+        <div class="pname">Free</div>
+        <div class="pprice">₹0<span>/mo</span></div>
+        <ul><li>10 queries/day</li><li>Standard speed</li><li>Basic attachments</li></ul>
       </div>
-      <div class="plan-card active-plan" id="plan-card-pro" onclick="selectPlan('pro')">
-        <div class="plan-name">Pro Plan</div>
-        <div class="plan-price">₹199<span>/mo</span></div>
-        <ul>
-          <li>Unlimited queries</li>
-          <li>10x Generation Speed</li>
-          <li>Full document analysis</li>
-        </ul>
+      <div class="plan-card sel" id="card-pro" onclick="selectPlan('pro')">
+        <div class="pname">Pro</div>
+        <div class="pprice">₹199<span>/mo</span></div>
+        <ul><li>Unlimited queries</li><li>10× speed</li><li>Full doc analysis</li></ul>
       </div>
     </div>
-    
     <div class="merr" id="upgrade-err"></div>
-    <button class="mbtn primary" id="checkout-btn" onclick="checkoutPro()">Upgrade via UPI / Razorpay</button>
-    <button class="mbtn ghost" onclick="closeUpgrade()">Back to safety</button>
+    <button class="mbtn primary" id="checkout-btn" onclick="checkoutPro()">Upgrade via Razorpay</button>
+    <button class="mbtn ghost"                     onclick="closeUpgrade()">Maybe later</button>
   </div>
 </div>
 
 <script>
-// ── SYSTEM CONFIGURATIONS & STATE MANAGEMENT ──
-let state = {
-  isLoggedIn: false,
-  user: null, // { name, plan, email, used_today, remaining }
-  messages: [], // Current runtime session messages mapped chronologically
-  activeAttachment: {
-    type: null,      // 'image' or 'file'
-    fileBlob: null,  // Holds actual JavaScript File Object
-    name: '',
-    fileType: '',
-    previewUrl: ''
-  },
+/* ════════════════════════════════════════════════════════════════════════
+   SUNAI v4.0 — Frontend JS
+   Features: streaming SSE, stop-generation, full marked.js markdown,
+             highlight.js syntax, typing cursor, Razorpay payment flow
+════════════════════════════════════════════════════════════════════════ */
+
+// ── Configure marked.js ────────────────────────────────────────────────
+marked.setOptions({ breaks: true, gfm: true });
+
+// ── State ──────────────────────────────────────────────────────────────
+const S = {
+  loggedIn: false,
+  user: null,
+  messages: [],
+  attach: { type: null, blob: null, name: '', mime: '', previewUrl: '' },
   authMode: 'signup',
-  isGenerating: false,
-  selectedUpgradePlan: 'pro'
+  streaming: false,
+  streamId: null,
+  selectedPlan: 'pro',
 };
 
-const chatContainer = document.getElementById('chat');
-const inputField = document.getElementById('inp');
-const sendButton = document.getElementById('snd');
-const attachBar = document.getElementById('attach-bar');
-const apImg = document.getElementById('ap-img');
-const apFileIcon = document.getElementById('ap-file-icon');
-const apName = document.getElementById('ap-name');
-const apType = document.getElementById('ap-type');
-const imageInput = document.getElementById('img-inp');
-const fileInput = document.getElementById('file-inp');
+// ── DOM refs ───────────────────────────────────────────────────────────
+const chatEl   = document.getElementById('chat');
+const inp      = document.getElementById('inp');
+const sndBtn   = document.getElementById('snd');
+const stopBtn  = document.getElementById('stop-btn');
+const attachBar= document.getElementById('attach-bar');
 
-// Execute initial pipeline on mount
-document.addEventListener("DOMContentLoaded", () => {
+// ── Init ───────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Show login/signup buttons for guests immediately
+  document.getElementById('btn-login').style.display  = 'inline-flex';
+  document.getElementById('btn-signup').style.display = 'inline-flex';
   checkSession();
 });
 
-// Sync current cookies and get login metrics from backend `/me`
 async function checkSession() {
   try {
-    const res = await fetch("/me");
-    if (res.ok) {
-      const data = await res.json();
-      state.isLoggedIn = true;
-      state.user = data;
-      renderUserInterface();
-      loadHistoryFromServer();
+    const r = await fetch('/me');
+    if (r.ok) {
+      S.user = await r.json();
+      S.loggedIn = true;
     } else {
-      state.isLoggedIn = false;
-      state.user = null;
-      renderUserInterface();
+      S.loggedIn = false; S.user = null;
     }
-  } catch (err) {
-    console.error("Session sync issue:", err);
-    state.isLoggedIn = false;
-    renderUserInterface();
-  }
+  } catch { S.loggedIn = false; S.user = null; }
+  renderUI();
+  if (S.loggedIn) loadHistory();
 }
 
-// Retrieve past context from the database `/history`
-async function loadHistoryFromServer() {
-  try {
-    const res = await fetch("/history");
-    if (res.ok) {
-      const data = await res.json();
-      if (data.history && data.history.length > 0) {
-        const welcome = document.getElementById('welcome');
-        if (welcome) welcome.remove();
-        
-        chatContainer.innerHTML = '';
-        state.messages = [];
-        
-        data.history.forEach(item => {
-          // Keep conversational alignment mapped to standard role expectations
-          const normalizedRole = (item.role === "assistant" || item.role === "assistant") ? "assistant" : "user";
-          state.messages.push({
-            role: normalizedRole,
-            content: item.content
-          });
-          appendMessageElement(normalizedRole === "assistant" ? "ai" : "user", item.content);
-        });
-        
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-        renderHistoryList();
-      }
-    }
-  } catch (err) {
-    console.error("Failed to load historical database layers:", err);
-  }
-}
-
-// Dynamic UI updates for plan thresholds
-function renderUserInterface() {
+// ── UI renderer ────────────────────────────────────────────────────────
+function renderUI() {
+  const pill     = document.getElementById('plan-pill');
   const btnLogin = document.getElementById('btn-login');
-  const btnSignup = document.getElementById('btn-signup');
-  const btnUpgrade = document.getElementById('btn-upgrade');
-  const planPill = document.getElementById('plan-pill');
-  const usageStrip = document.getElementById('usage-strip');
-  const histBody = document.getElementById('hist-body');
-  const drawerFooter = document.getElementById('drawer-footer');
+  const btnSig   = document.getElementById('btn-signup');
+  const btnUp    = document.getElementById('btn-upgrade');
+  const strip    = document.getElementById('usage-strip');
+  const footer   = document.getElementById('drawer-footer');
 
-  if (state.isLoggedIn && state.user) {
+  if (S.loggedIn && S.user) {
     btnLogin.style.display = 'none';
-    btnSignup.style.display = 'none';
-    
-    planPill.style.display = 'inline-block';
-    planPill.innerText = state.user.plan === 'pro' ? '⚡ Pro' : 'Free';
-    planPill.className = `plan-pill ${state.user.plan}-pill`;
-    
-    btnUpgrade.style.display = state.user.plan === 'pro' ? 'none' : 'inline-block';
-    usageStrip.style.display = 'block';
-    
-    const limit = state.user.plan === 'pro' ? '∞' : (state.user.used_today + state.user.remaining);
-    const used = state.user.used_today || 0;
-    document.getElementById('usage-num').innerText = `${used}/${limit}`;
-    const percent = state.user.plan === 'pro' ? 0 : Math.min(100, (used / limit) * 100);
-    const ubarFill = document.getElementById('ubar-fill');
-    ubarFill.style.width = `${percent}%`;
-    if (percent >= 80) ubarFill.classList.add('warn');
-    else ubarFill.classList.remove('warn');
+    btnSig.style.display   = 'none';
+    pill.style.display     = 'inline-block';
+    pill.textContent       = S.user.plan === 'pro' ? '⚡ Pro' : 'Free';
+    pill.className         = `plan-pill ${S.user.plan}-pill`;
+    btnUp.style.display    = S.user.plan === 'pro' ? 'none' : 'inline-flex';
+    strip.style.display    = 'block';
 
-    drawerFooter.style.display = 'block';
-    document.getElementById('drawer-name').innerText = state.user.name;
-    document.getElementById('drawer-plan').innerText = state.user.plan === 'pro' ? 'Pro Member' : 'Free Tier';
-    document.getElementById('drawer-av').innerText = state.user.name.charAt(0).toUpperCase();
+    const limit   = S.user.plan === 'pro' ? '∞' : (S.user.used_today + S.user.remaining);
+    const used    = S.user.used_today || 0;
+    const pct     = S.user.plan === 'pro' ? 0 : Math.min(100, (used / limit) * 100);
+    document.getElementById('usage-num').textContent = `${used}/${limit}`;
+    const fill = document.getElementById('ubar-fill');
+    fill.style.width = `${pct}%`;
+    fill.classList.toggle('warn', pct >= 80);
 
-    renderHistoryList();
+    footer.style.display = 'block';
+    document.getElementById('drawer-av').textContent   = S.user.name.charAt(0).toUpperCase();
+    document.getElementById('drawer-name').textContent = S.user.name;
+    document.getElementById('drawer-plan').textContent = S.user.plan === 'pro' ? 'Pro Member' : 'Free Tier';
+    renderHistList();
   } else {
-    btnLogin.style.display = 'inline-block';
-    btnSignup.style.display = 'inline-block';
-    btnUpgrade.style.display = 'none';
-    planPill.style.display = 'none';
-    usageStrip.style.display = 'none';
-    drawerFooter.style.display = 'none';
-    histBody.innerHTML = `<div style="font-size:13.5px;color:var(--muted);text-align:center;padding:32px 16px;line-height:1.7">Sign in to save<br>conversations permanently.</div>`;
+    btnLogin.style.display = 'inline-flex';
+    btnSig.style.display   = 'inline-flex';
+    btnUp.style.display    = 'none';
+    pill.style.display     = 'none';
+    strip.style.display    = 'none';
+    footer.style.display   = 'none';
+    document.getElementById('hist-body').innerHTML =
+      `<div style="font-size:13px;color:var(--muted);text-align:center;padding:26px 12px;line-height:1.7">Sign in to save<br>conversations permanently.</div>`;
   }
 }
 
-function renderHistoryList() {
-  const histBody = document.getElementById('hist-body');
-  if (!state.isLoggedIn) return;
-
-  if (state.messages.length === 0) {
-    histBody.innerHTML = `<div style="font-size:12.5px;color:var(--subtle);text-align:center;padding:20px">No recent conversations.</div>`;
+function renderHistList() {
+  const body = document.getElementById('hist-body');
+  if (!S.loggedIn || !S.messages.length) {
+    body.innerHTML = `<div style="font-size:12.5px;color:var(--subtle);text-align:center;padding:18px">No recent conversations.</div>`;
     return;
   }
-  
-  // Condense the thread list for dynamic, streamlined sidebar viewing
-  const firstUserMessage = state.messages.find(m => m.role === 'user');
-  const titleText = firstUserMessage ? (firstUserMessage.content.substring(0, 24) + '...') : 'Active Chat Room';
-  
-  histBody.innerHTML = `
-    <div class="hist-date-label">Current Chat Session</div>
-    <div class="hist-item" style="background: var(--s1)">
+  const first = S.messages.find(m => m.role === 'user');
+  const title = first ? first.content.substring(0, 28) + '…' : 'Active session';
+  body.innerHTML = `
+    <div class="hist-label">Current Session</div>
+    <div class="hist-item" style="background:var(--s1)">
       <div class="hist-item-left">
         <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        <span>${escapeHtml(titleText)}</span>
+        <span>${esc(title)}</span>
       </div>
-      <button class="hist-delete-btn" onclick="clearHistoryLogs(event)" title="Wipe entire server session history">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      <button class="hist-del" onclick="clearAll(event)" title="Clear history">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
       </button>
     </div>`;
 }
 
-async function clearHistoryLogs(event) {
-  if (event) event.stopPropagation();
-  if (confirm("Reset current conversation logs from the database permanently?")) {
-    try {
-      const res = await fetch("/history/clear", { method: "POST" });
-      if (res.ok) {
-        showToast("Database history wiped clean!");
-        newChat();
-      }
-    } catch (e) {
-      console.error("Database deletion process encountered an error:", e);
-    }
-  }
+// ── History ────────────────────────────────────────────────────────────
+async function loadHistory() {
+  try {
+    const r = await fetch('/history');
+    if (!r.ok) return;
+    const data = await r.json();
+    if (!data.history?.length) return;
+    document.getElementById('welcome')?.remove();
+    chatEl.innerHTML = '';
+    S.messages = [];
+    data.history.forEach(item => {
+      const role = item.role === 'assistant' ? 'assistant' : 'user';
+      S.messages.push({ role, content: item.content });
+      appendMsg(role === 'assistant' ? 'ai' : 'user', item.content);
+    });
+    chatEl.scrollTop = chatEl.scrollHeight;
+    renderHistList();
+  } catch (e) { console.error('loadHistory', e); }
 }
 
-// ── WINDOW DRAWER UTILITIES ──
-function openDrawer() {
-  document.getElementById('drawer').classList.add('open');
-  document.getElementById('drawer-overlay').classList.add('open');
+async function clearAll(ev) {
+  if (ev) ev.stopPropagation();
+  if (!confirm('Clear conversation history?')) return;
+  try {
+    const r = await fetch('/history/clear', { method: 'POST' });
+    if (r.ok) { toast('History cleared'); newChat(); }
+  } catch {}
 }
-function closeDrawer() {
-  document.getElementById('drawer').classList.remove('open');
-  document.getElementById('drawer-overlay').classList.remove('open');
-}
+
+// ── Drawer ─────────────────────────────────────────────────────────────
+function openDrawer()  { document.getElementById('drawer').classList.add('open'); document.getElementById('drawer-overlay').classList.add('open'); }
+function closeDrawer() { document.getElementById('drawer').classList.remove('open'); document.getElementById('drawer-overlay').classList.remove('open'); }
 
 function newChat() {
-  state.messages = [];
-  chatContainer.innerHTML = `
+  S.messages = [];
+  chatEl.innerHTML = `
     <div id="welcome">
-      <div class="sun-hero">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-      </div>
+      <div class="sun-hero"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></div>
       <h1>Ask anything to <span>SUNAI</span></h1>
-      <p>Your ultimate free AI assistant optimized for coding architecture, logical science, career development, and document translations.</p>
-      
+      <p>Your free AI assistant for coding, science, career, math and more.</p>
       <div class="suggestions">
-        <button class="sug-btn" onclick="q('What is machine learning and how does it work?')">
-          <span class="sug-title">What is machine learning?</span>
-          <span class="sug-desc">A conceptual explanation of core methodologies.<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
-        </button>
-        <button class="sug-btn" onclick="q('Write a Python binary search function with explanations')">
-          <span class="sug-title">Write Python Binary Search</span>
-          <span class="sug-desc">Get structured logic with complexities.<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
-        </button>
-        <button class="sug-btn" onclick="q('How do I structure a world-class system architect resume?')">
-          <span class="sug-title">Structure Architect Resume</span>
-          <span class="sug-desc">Get sections and layout structures.<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
-        </button>
-        <button class="sug-btn" onclick="q('Explain neural networks in simple words')">
-          <span class="sug-title">Neural Networks Explained</span>
-          <span class="sug-desc">Layman concepts and network models.<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
-        </button>
+        <button class="sug-btn" onclick="q('What is machine learning and how does it work?')"><span class="sug-title">What is machine learning?</span><span class="sug-desc">Core concepts explained<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></button>
+        <button class="sug-btn" onclick="q('Write a Python binary search with explanation')"><span class="sug-title">Python Binary Search</span><span class="sug-desc">Code with complexity<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></button>
+        <button class="sug-btn" onclick="q('How do I structure a system architect resume?')"><span class="sug-title">Architect Resume</span><span class="sug-desc">Sections and layout<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></button>
+        <button class="sug-btn" onclick="q('Explain neural networks with a simple analogy')"><span class="sug-title">Neural Networks</span><span class="sug-desc">Beginner walkthrough<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></button>
       </div>
     </div>`;
   closeDrawer();
-  renderUserInterface();
+  renderUI();
 }
 
-function q(text) {
-  inputField.value = text;
-  grow(inputField);
-  send();
-}
+function q(text) { inp.value = text; grow(inp); send(); }
 
-// ── ATTACHMENT PIPELINE ──
+// ── Attachments ────────────────────────────────────────────────────────
 function attachImg(input) {
-  const file = input.files[0];
-  if (!file) return;
-  
-  if (file.size > 5 * 1024 * 1024) {
-    showToast("Images are limited to 5MB.");
-    input.value = '';
-    return;
-  }
-  
+  const file = input.files[0]; if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { toast('Image max 5 MB'); input.value = ''; return; }
   const reader = new FileReader();
-  reader.onload = function(e) {
-    state.activeAttachment = { 
-      type: 'image', 
-      fileBlob: file, 
-      name: file.name, 
-      fileType: file.type,
-      previewUrl: e.target.result 
-    };
-    apFileIcon.style.display = 'none';
-    apImg.style.display = 'block';
-    apImg.src = e.target.result;
-    apName.innerText = file.name;
-    apType.innerText = 'Image Component';
+  reader.onload = e => {
+    S.attach = { type: 'image', blob: file, name: file.name, mime: file.type, previewUrl: e.target.result };
+    document.getElementById('ap-icon').style.display = 'none';
+    const img = document.getElementById('ap-img');
+    img.style.display = 'block'; img.src = e.target.result;
+    document.getElementById('ap-name').textContent = file.name;
+    document.getElementById('ap-type').textContent = 'Image';
     attachBar.style.display = 'block';
   };
   reader.readAsDataURL(file);
 }
 
 function attachFile(input) {
-  const file = input.files[0];
-  if (!file) return;
-
-  if (file.size > 10 * 1024 * 1024) {
-    showToast("Documents are limited to 10MB.");
-    input.value = '';
-    return;
-  }
-
-  state.activeAttachment = { 
-    type: 'file', 
-    fileBlob: file, 
-    name: file.name, 
-    fileType: file.name.split('.').pop().toUpperCase()
-  };
-  apImg.style.display = 'none';
-  apFileIcon.style.display = 'flex';
-  apName.innerText = file.name;
-  apType.innerText = file.name.split('.').pop().toUpperCase() + ' File';
+  const file = input.files[0]; if (!file) return;
+  if (file.size > 10 * 1024 * 1024) { toast('File max 10 MB'); input.value = ''; return; }
+  S.attach = { type: 'file', blob: file, name: file.name, mime: '', previewUrl: '' };
+  document.getElementById('ap-img').style.display  = 'none';
+  document.getElementById('ap-icon').style.display = 'flex';
+  document.getElementById('ap-name').textContent   = file.name;
+  document.getElementById('ap-type').textContent   = file.name.split('.').pop().toUpperCase() + ' File';
   attachBar.style.display = 'block';
 }
 
 function removeAttach() {
-  state.activeAttachment = { type: null, fileBlob: null, name: '', fileType: '', previewUrl: '' };
+  S.attach = { type: null, blob: null, name: '', mime: '', previewUrl: '' };
   attachBar.style.display = 'none';
-  imageInput.value = '';
-  fileInput.value = '';
+  document.getElementById('img-inp').value  = '';
+  document.getElementById('file-inp').value = '';
 }
 
-// ── INPUT SYSTEM UTILS ──
-function grow(element) {
-  element.style.height = "auto";
-  element.style.height = (element.scrollHeight - 4) + "px";
-}
+// ── Input helpers ──────────────────────────────────────────────────────
+function grow(el) { el.style.height = 'auto'; el.style.height = (el.scrollHeight - 4) + 'px'; }
+function onKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }
 
-function onKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    send();
-  }
-}
-
-// ── TYPOGRAPHY FORMATTERS FOR MARKDOWN & MATHS ──
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-}
-
-function formatMarkdown(src) {
-  if (!src) return '';
-  let txt = escapeHtml(src);
-  
-  // Syntax highlighted code-block mapping
-  const codeBlockRegex = /```(.*?)\n([\s\S]*?)```/g;
-  txt = txt.replace(codeBlockRegex, (match, lang, code) => {
-    const cleanLang = lang.trim() || 'code';
-    const cleanCode = code.trim();
-    const codeId = 'code_' + Math.random().toString(36).substring(2, 9);
-    
-    return `
-      <div class="code-block-container">
-        <div class="code-block-header">
-          <span>${cleanLang}</span>
-          <button class="copy-code-btn" onclick="copyRawCode('${codeId}')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-            <span>Copy</span>
-          </button>
-        </div>
-        <pre id="${codeId}"><code>${cleanCode}</code></pre>
-      </div>`;
-  });
-
-  // Bullet Point parser mappings
-  txt = txt.replace(/^\s*[-*]\s+(.*)$/gm, '<li>$1</li>');
-  txt = txt.replace(/(<li>.*<\/li>)/g, '<ul>$1</ul>');
-  txt = txt.replace(/<\/ul>\s*<ul>/g, ''); 
-
-  // Strong formatting
-  txt = txt.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-  
-  // Inline code elements
-  txt = txt.replace(/`(.*?)`/g, '<code>$1</code>');
-  
-  // Newline adjustments
-  txt = txt.replace(/\n/g, '<br>');
-  
-  return txt;
-}
-
-function copyRawCode(id) {
-  const codeElement = document.getElementById(id);
-  if (!codeElement) return;
-  
-  const range = document.createRange();
-  range.selectNode(codeElement);
-  window.getSelection().removeAllRanges();
-  window.getSelection().addRange(range);
-  
-  try {
-    document.execCommand('copy');
-    showToast("Code copied to clipboard!");
-  } catch (err) {
-    showToast("Execution failure. Copy manually.");
-  }
-  window.getSelection().removeAllRanges();
-}
-
-function showToast(message) {
-  const toast = document.getElementById('toast');
-  toast.innerText = message;
-  toast.classList.add('show');
-  setTimeout(() => {
-    toast.classList.remove('show');
-  }, 2200);
-}
-
-// ── BACKEND API TRANSMISSIONS ──
+// ── Send ───────────────────────────────────────────────────────────────
 async function send() {
-  const text = inputField.value.trim();
-  if (!text && !state.activeAttachment.fileBlob) return;
-  if (state.isGenerating) return;
+  const text = inp.value.trim();
+  if (!text && !S.attach.blob) return;
+  if (S.streaming) return;
 
-  if (!state.isLoggedIn) {
+  if (!S.loggedIn) {
     openAuth('signup');
-    document.getElementById('auth-err').innerText = "Register your profile to start chatting with SUNAI!";
+    document.getElementById('auth-err').textContent = 'Please sign in to chat with SUNAI.';
     return;
   }
 
-  // Quota guard limits for free users
-  if (state.user && state.user.plan === 'free' && state.user.used_today >= (state.user.used_today + state.user.remaining)) {
-    openUpgrade();
-    document.getElementById('upgrade-err').innerText = "Standard free operations daily limit reached. Upgrade to Pro!";
-    return;
-  }
-
-  const welcome = document.getElementById('welcome');
-  if (welcome) welcome.remove();
-
-  const currentAttachment = { ...state.activeAttachment };
+  document.getElementById('welcome')?.remove();
+  const attach = { ...S.attach };
   removeAttach();
+  inp.value = ''; inp.style.height = '24px';
 
-  inputField.value = '';
-  inputField.style.height = "24px";
+  S.messages.push({ role: 'user', content: text });
+  appendMsg('user', text, attach);
 
-  // Feed user query into local conversation logs
-  state.messages.push({ role: 'user', content: text });
-  appendMessageElement('user', text, currentAttachment);
-
-  triggerAiGeneration(text, currentAttachment);
+  // Branch: image/file use non-streaming endpoints; text uses streaming
+  if (attach.type === 'image') {
+    await sendImage(text, attach);
+  } else if (attach.type === 'file') {
+    await sendFile(text, attach);
+  } else {
+    await sendStream(text);
+  }
 }
 
-function appendMessageElement(role, text, attachment) {
-  const msgGroup = document.createElement('div');
-  msgGroup.className = `msg-group ${role}`;
-  
-  let attachmentHtml = '';
-  if (attachment && attachment.type) {
-    if (attachment.type === 'image') {
-      attachmentHtml = `<img src="${attachment.previewUrl || ''}" class="img-preview" alt="User image asset">`;
-    } else {
-      attachmentHtml = `
-        <div class="attach-chip" style="margin-bottom:12px; background:var(--s2)">
-          <div class="file-icon"><svg viewBox="0 0 24 24" style="width:18px;height:18px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-          <div class="attach-info">
-            <div class="attach-name" style="max-width:220px">${escapeHtml(attachment.name)}</div>
-          </div>
-        </div>`;
+// ── Streaming chat ─────────────────────────────────────────────────────
+async function sendStream(userText) {
+  S.streaming = true;
+  sndBtn.disabled = true;
+  stopBtn.classList.add('visible');
+
+  // Create AI bubble with typing cursor
+  const group = document.createElement('div');
+  group.className = 'msg-group ai';
+  group.innerHTML = `
+    <div class="ai-av"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></div>
+    <div class="bubble"><div class="md" id="stream-md"></div><span class="typing-cursor" id="stream-cursor"></span></div>`;
+  chatEl.appendChild(group);
+  chatEl.scrollTop = chatEl.scrollHeight;
+
+  const mdEl     = document.getElementById('stream-md');
+  const cursorEl = document.getElementById('stream-cursor');
+  let rawText    = '';
+
+  try {
+    const resp = await fetch('/chat/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: S.messages }),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      mdEl.innerHTML = `⚠️ ${err.message || err.error || 'Something went wrong.'}`;
+      finishStream(group, '', false);
+      return;
     }
+
+    const reader = resp.body.getReader();
+    const dec    = new TextDecoder();
+    let buf      = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+
+      // Process SSE lines
+      const lines = buf.split('\n');
+      buf = lines.pop(); // keep incomplete line
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const payload = line.slice(6);
+
+        if (payload.startsWith('[STREAM_ID:')) {
+          S.streamId = payload.slice(11, -1);
+          continue;
+        }
+        if (payload === '[DONE]' || payload === '[ABORTED]') {
+          finishStream(group, rawText, true);
+          return;
+        }
+        if (payload.startsWith('[ERROR]')) {
+          mdEl.innerHTML = `⚠️ ${esc(payload.slice(8))}`;
+          finishStream(group, rawText, false);
+          return;
+        }
+
+        rawText += payload;
+        // Render markdown incrementally (marked is fast enough)
+        mdEl.innerHTML = renderMD(rawText);
+        chatEl.scrollTop = chatEl.scrollHeight;
+      }
+    }
+    finishStream(group, rawText, true);
+
+  } catch (e) {
+    console.error('stream error', e);
+    mdEl.innerHTML = '⚠️ Connection lost. Please try again.';
+    finishStream(group, rawText, false);
+  }
+}
+
+function finishStream(group, text, success) {
+  // Remove cursor
+  document.getElementById('stream-cursor')?.remove();
+  // Remove temporary IDs
+  document.getElementById('stream-md')?.removeAttribute('id');
+
+  if (success && text) {
+    // Re-render final markdown cleanly + apply highlight.js
+    const mdEl = group.querySelector('.md');
+    if (mdEl) {
+      mdEl.innerHTML = renderMD(text);
+      mdEl.querySelectorAll('pre code').forEach(b => hljs.highlightElement(b));
+    }
+    // Apply KaTeX
+    renderKatex(group);
+    S.messages.push({ role: 'assistant', content: text });
+  }
+
+  S.streaming = false;
+  S.streamId  = null;
+  sndBtn.disabled = false;
+  stopBtn.classList.remove('visible');
+  chatEl.scrollTop = chatEl.scrollHeight;
+  renderUI(); // refresh usage
+  checkSession();
+}
+
+// ── Stop generation ────────────────────────────────────────────────────
+async function stopGeneration() {
+  if (!S.streamId) return;
+  try {
+    await fetch('/chat/abort', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stream_id: S.streamId }),
+    });
+  } catch {}
+}
+
+// ── Image / file (non-streaming) ───────────────────────────────────────
+async function sendImage(text, attach) {
+  const loader = makeLoader();
+  try {
+    const fd = new FormData();
+    fd.append('image', attach.blob);
+    fd.append('question', text || 'Describe this image in detail.');
+    const r = await fetch('/analyze-image', { method: 'POST', body: fd });
+    loader.remove();
+    const data = await r.json();
+    if (r.ok) {
+      S.messages.push({ role: 'assistant', content: data.reply });
+      appendMsg('ai', data.reply);
+    } else {
+      appendMsg('ai', `⚠️ ${data.error || 'Image analysis failed.'}`);
+    }
+  } catch { loader.remove(); appendMsg('ai', '⚠️ Network error. Please try again.'); }
+  await checkSession();
+}
+
+async function sendFile(text, attach) {
+  const loader = makeLoader();
+  try {
+    const fd = new FormData();
+    fd.append('file', attach.blob);
+    fd.append('question', text || 'Summarize this document.');
+    const r = await fetch('/analyze-file', { method: 'POST', body: fd });
+    loader.remove();
+    const data = await r.json();
+    if (r.ok) {
+      S.messages.push({ role: 'assistant', content: data.reply });
+      appendMsg('ai', data.reply);
+    } else {
+      appendMsg('ai', `⚠️ ${data.error || 'File analysis failed.'}`);
+    }
+  } catch { loader.remove(); appendMsg('ai', '⚠️ Network error. Please try again.'); }
+  await checkSession();
+}
+
+function makeLoader() {
+  const el = document.createElement('div');
+  el.className = 'msg-group ai';
+  el.innerHTML = `
+    <div class="ai-av"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></div>
+    <div class="bubble"><div class="typing-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
+  chatEl.appendChild(el);
+  chatEl.scrollTop = chatEl.scrollHeight;
+  return el;
+}
+
+// ── Append completed message ───────────────────────────────────────────
+function appendMsg(role, text, attach) {
+  const group = document.createElement('div');
+  group.className = `msg-group ${role}`;
+
+  let attachHtml = '';
+  if (attach?.type === 'image') {
+    attachHtml = `<img src="${esc(attach.previewUrl)}" class="img-preview" alt="Attached image">`;
+  } else if (attach?.type === 'file') {
+    attachHtml = `<div class="attach-chip" style="margin-bottom:10px;background:var(--s2)">
+      <div class="file-icon"><svg viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <div class="attach-info"><div class="attach-name">${esc(attach.name)}</div></div>
+    </div>`;
   }
 
   if (role === 'user') {
-    msgGroup.innerHTML = `
-      <div class="bubble">
-        ${attachmentHtml}
-        ${text ? `<p>${escapeHtml(text).replace(/\n/g, '<br>')}</p>` : ''}
-      </div>`;
+    group.innerHTML = `<div class="bubble">${attachHtml}${text ? `<p>${esc(text).replace(/\n/g, '<br>')}</p>` : ''}</div>`;
   } else {
-    msgGroup.innerHTML = `
-      <div class="ai-av">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+    group.innerHTML = `
+      <div class="ai-av"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></div>
+      <div class="bubble">${attachHtml}<div class="md">${renderMD(text)}</div></div>`;
+    // Syntax highlight & KaTeX
+    group.querySelectorAll('pre code').forEach(b => hljs.highlightElement(b));
+    renderKatex(group);
+  }
+
+  chatEl.appendChild(group);
+  chatEl.scrollTop = chatEl.scrollHeight;
+  return group;
+}
+
+// ── Markdown renderer using marked.js ──────────────────────────────────
+function renderMD(src) {
+  if (!src) return '';
+  // Use marked with a custom renderer for code blocks to add copy button
+  const renderer = new marked.Renderer();
+  renderer.code = (code, lang) => {
+    const id  = 'cb_' + Math.random().toString(36).slice(2, 8);
+    const safeCode = esc(code);
+    const langLabel = lang || 'code';
+    return `<div class="code-wrap">
+      <div class="code-head">
+        <span>${esc(langLabel)}</span>
+        <button class="copy-btn" onclick="copyCode('${id}')">
+          <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy
+        </button>
       </div>
-      <div class="bubble">${attachmentHtml}<div class="markdown-payload">${formatMarkdown(text)}</div></div>`;
-  }
-  
-  chatContainer.appendChild(msgGroup);
-  chatContainer.scrollTop = chatContainer.scrollHeight;
-  
-  // Format any LaTeX mathematical formula present inside the message node
-  if (window.renderMathInElement) {
-    renderMathInElement(msgGroup, {
-      delimiters: [
-        {left: '$$', right: '$$', display: true},
-        {left: '$', right: '$', display: false}
-      ],
-      throwOnError : false
-    });
-  }
-  return msgGroup;
+      <pre><code id="${id}" class="language-${esc(langLabel)}">${safeCode}</code></pre>
+    </div>`;
+  };
+  return marked.parse(src, { renderer });
 }
 
-async function triggerAiGeneration(userQuery, attachmentObj) {
-  state.isGenerating = true;
-  sendButton.disabled = true;
+// ── KaTeX ──────────────────────────────────────────────────────────────
+function renderKatex(el) {
+  if (!window.renderMathInElement) return;
+  renderMathInElement(el, {
+    delimiters: [
+      { left: '$$', right: '$$', display: true },
+      { left: '$', right: '$', display: false },
+    ],
+    throwOnError: false,
+  });
+}
 
-  const loader = document.createElement('div');
-  loader.className = 'msg-group ai';
-  loader.id = 'ai-loader';
-  loader.innerHTML = `
-    <div class="ai-av">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-    </div>
-    <div class="bubble"><div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
-  chatContainer.appendChild(loader);
-  chatContainer.scrollTop = chatContainer.scrollHeight;
-
+// ── Code copy ──────────────────────────────────────────────────────────
+async function copyCode(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
   try {
-    let res;
-    let replyText = "";
-
-    // Pipeline conditional switches mapped with active attachment structures
-    if (attachmentObj && attachmentObj.type === 'image') {
-      const formData = new FormData();
-      formData.append("image", attachmentObj.fileBlob);
-      formData.append("question", userQuery || "Describe this image in detail.");
-      
-      res = await fetch("/analyze-image", {
-        method: "POST",
-        body: formData
-      });
-    } 
-    else if (attachmentObj && attachmentObj.type === 'file') {
-      const formData = new FormData();
-      formData.append("file", attachmentObj.fileBlob);
-      formData.append("question", userQuery || "Summarize this document.");
-      
-      res = await fetch("/analyze-file", {
-        method: "POST",
-        body: formData
-      });
-    } 
-    else {
-      res = await fetch("/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: state.messages })
-      });
-    }
-
-    loader.remove();
-
-    if (res.ok) {
-      const data = await res.json();
-      replyText = data.reply;
-      
-      state.messages.push({ role: 'assistant', content: replyText });
-      appendMessageElement('ai', replyText);
-      
-      // Update global states metrics from API
-      await checkSession();
-    } else {
-      const errData = await res.json().catch(() => ({}));
-      replyText = errData.message || errData.error || "A processing anomaly has occurred. Please try again.";
-      appendMessageElement('ai', `⚠️ Error: ${replyText}`);
-    }
-  } catch (err) {
-    loader.remove();
-    appendMessageElement('ai', "⚠️ Network connection timeout. Verify server operations status.");
-    console.error(err);
-  } finally {
-    state.isGenerating = false;
-    sendButton.disabled = false;
+    await navigator.clipboard.writeText(el.innerText);
+    toast('Code copied!');
+  } catch {
+    // Fallback
+    const sel = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    sel.removeAllRanges(); sel.addRange(range);
+    document.execCommand('copy');
+    sel.removeAllRanges();
+    toast('Code copied!');
   }
 }
 
-// ── CREDENTIAL AUTH CONTEXTS ──
-function openAuth(mode = 'signup') {
-  state.authMode = mode;
+// ── Toast ──────────────────────────────────────────────────────────────
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── Escape HTML ────────────────────────────────────────────────────────
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+// ── Auth ───────────────────────────────────────────────────────────────
+function openAuth(mode='signup') {
+  S.authMode = mode;
   document.getElementById('auth-modal').classList.add('show');
   switchTab(mode);
 }
-
 function closeAuth() {
   document.getElementById('auth-modal').classList.remove('show');
-  document.getElementById('auth-err').innerText = '';
+  document.getElementById('auth-err').textContent = '';
 }
-
 function switchTab(mode) {
-  state.authMode = mode;
-  const tabSignup = document.getElementById('tab-signup');
-  const tabLogin = document.getElementById('tab-login');
-  const title = document.getElementById('auth-title');
-  const submitBtn = document.getElementById('auth-submit-btn');
-  const switchTxt = document.getElementById('auth-switch');
-  const nameField = document.getElementById('field-name');
-
-  if (mode === 'signup') {
-    tabSignup.classList.add('active');
-    tabLogin.classList.remove('active');
-    nameField.style.display = 'block';
-    title.innerText = "Create Account";
-    submitBtn.innerText = "Register Profile";
-    switchTxt.innerHTML = `Already have an account? <a onclick="switchTab('login')">Log in</a>`;
-  } else {
-    tabLogin.classList.add('active');
-    tabSignup.classList.remove('active');
-    nameField.style.display = 'none';
-    title.innerText = "Welcome Back";
-    submitBtn.innerText = "Log In Securely";
-    switchTxt.innerHTML = `New to SUNAI? <a onclick="switchTab('signup')">Create account</a>`;
-  }
+  S.authMode = mode;
+  const isSig = mode === 'signup';
+  document.getElementById('tab-signup').classList.toggle('active',  isSig);
+  document.getElementById('tab-login').classList.toggle('active',  !isSig);
+  document.getElementById('field-name').style.display = isSig ? 'block' : 'none';
+  document.getElementById('auth-title').textContent   = isSig ? 'Create account' : 'Welcome back';
+  document.getElementById('auth-submit').textContent  = isSig ? 'Create Account' : 'Log In';
+  document.getElementById('auth-switch').innerHTML    = isSig
+    ? `Already have an account? <a onclick="switchTab('login')">Log in</a>`
+    : `New to SUNAI? <a onclick="switchTab('signup')">Create account</a>`;
 }
-
 async function submitAuth() {
   const email = document.getElementById('auth-email').value.trim();
-  const password = document.getElementById('auth-password').value.trim();
-  const name = document.getElementById('auth-name').value.trim();
-  const errDiv = document.getElementById('auth-err');
-
-  if (!email || !password || (state.authMode === 'signup' && !name)) {
-    errDiv.innerText = "Please complete all requested parameters.";
-    return;
+  const pw    = document.getElementById('auth-password').value;
+  const name  = document.getElementById('auth-name').value.trim();
+  const errEl = document.getElementById('auth-err');
+  if (!email || !pw || (S.authMode === 'signup' && !name)) {
+    errEl.textContent = 'Please fill in all fields.'; return;
   }
-
-  const endpoint = state.authMode === 'signup' ? '/register' : '/login';
-  const bodyData = state.authMode === 'signup' ? { name, email, password } : { email, password };
-
+  const endpoint = S.authMode === 'signup' ? '/register' : '/login';
+  const body     = S.authMode === 'signup' ? { name, email, password: pw } : { email, password: pw };
   try {
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(bodyData)
-    });
-
-    if (res.ok) {
-      showToast("Authentication confirmed!");
-      closeAuth();
-      await checkSession();
+    const r = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (r.ok) {
+      toast('Welcome to SUNAI!'); closeAuth(); await checkSession();
     } else {
-      const err = await res.json();
-      errDiv.innerText = err.error || "Authentication failed.";
+      const e = await r.json();
+      errEl.textContent = e.error || 'Authentication failed.';
     }
-  } catch (err) {
-    errDiv.innerText = "Connection error. Try again.";
-  }
+  } catch { errEl.textContent = 'Connection error. Try again.'; }
 }
+function logout() { window.location.href = '/logout'; }
 
-function logout() {
-  window.location.href = "/logout";
-}
-
-// ── PRO PLAN UPGRADES ──
-function openUpgrade() {
-  document.getElementById('upgrade-modal').classList.add('show');
-  selectPlan('pro');
-}
-
-function closeUpgrade() {
-  document.getElementById('upgrade-modal').classList.remove('show');
-  document.getElementById('upgrade-err').innerText = '';
-}
-
-function selectPlan(plan) {
-  state.selectedUpgradePlan = plan;
-  const cardFree = document.getElementById('plan-card-free');
-  const cardPro = document.getElementById('plan-card-pro');
-  const checkoutBtn = document.getElementById('checkout-btn');
-
-  if (plan === 'free') {
-    cardFree.classList.add('active-plan');
-    cardPro.classList.remove('active-plan');
-    checkoutBtn.innerText = "Keep Standard Tier";
-  } else {
-    cardPro.classList.add('active-plan');
-    cardFree.classList.remove('active-plan');
-    checkoutBtn.innerText = "Upgrade via Razorpay";
-  }
+// ── Upgrade / Razorpay ─────────────────────────────────────────────────
+function openUpgrade()  { document.getElementById('upgrade-modal').classList.add('show'); selectPlan('pro'); }
+function closeUpgrade() { document.getElementById('upgrade-modal').classList.remove('show'); document.getElementById('upgrade-err').textContent = ''; }
+function selectPlan(p) {
+  S.selectedPlan = p;
+  document.getElementById('card-free').classList.toggle('sel', p === 'free');
+  document.getElementById('card-pro').classList.toggle('sel',  p === 'pro');
+  document.getElementById('checkout-btn').textContent = p === 'free' ? 'Keep Free Plan' : 'Upgrade via Razorpay';
 }
 
 async function checkoutPro() {
-  if (!state.isLoggedIn) {
-    closeUpgrade();
-    openAuth('signup');
-    document.getElementById('auth-err').innerText = "Please authenticate before upgrading plan.";
-    return;
-  }
-  
-  if (state.selectedUpgradePlan === 'free') {
-    closeUpgrade();
-    return;
-  }
+  if (!S.loggedIn) { closeUpgrade(); openAuth('signup'); return; }
+  if (S.selectedPlan === 'free') { closeUpgrade(); return; }
 
   const btn = document.getElementById('checkout-btn');
-  btn.innerText = "Validating Payment Gateway Security...";
-  btn.disabled = true;
+  btn.textContent = 'Creating order…'; btn.disabled = true;
 
   try {
-    const res = await fetch("/upgrade", { method: "POST" });
-    if (res.ok) {
-      showToast("Payment Complete! Welcome to Pro!");
-      closeUpgrade();
-      await checkSession();
-    } else {
-      document.getElementById('upgrade-err').innerText = "Upgrade transaction failed.";
+    // Step 1: create Razorpay order on backend
+    const orderRes = await fetch('/create-order', { method: 'POST' });
+    if (!orderRes.ok) throw new Error('Order creation failed');
+    const { order_id, amount } = await orderRes.json();
+
+    // Step 2: open Razorpay checkout (requires Razorpay JS SDK)
+    if (!window.Razorpay) {
+      // Load Razorpay SDK dynamically
+      await new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
     }
+
+    const rzp = new window.Razorpay({
+      key: '{{ razorpay_key_id }}',   // Flask will template this in
+      amount,
+      currency: 'INR',
+      order_id,
+      name: 'SUNAI Pro',
+      description: 'Monthly subscription',
+      theme: { color: '#FF6B00' },
+      handler: async (response) => {
+        // Step 3: verify on backend
+        const verRes = await fetch('/verify-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(response),
+        });
+        if (verRes.ok) {
+          toast('🎉 Welcome to SUNAI Pro!');
+          closeUpgrade();
+          await checkSession();
+        } else {
+          document.getElementById('upgrade-err').textContent = 'Payment verification failed. Contact support.';
+        }
+      },
+      modal: { ondismiss: () => { btn.textContent = 'Upgrade via Razorpay'; btn.disabled = false; } },
+    });
+    rzp.open();
+
   } catch (e) {
-    document.getElementById('upgrade-err').innerText = "Network transmission error.";
+    document.getElementById('upgrade-err').textContent = 'Could not start payment. Try again.';
+    console.error(e);
   } finally {
-    btn.innerText = "Upgrade via UPI / Razorpay";
-    btn.disabled = false;
+    btn.textContent = 'Upgrade via Razorpay'; btn.disabled = false;
   }
 }
 </script>
 </body>
 </html>
-
