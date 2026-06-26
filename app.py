@@ -416,7 +416,7 @@ def extract_and_save_memories(uid: str, conversation: list):
             f"{m['role'].upper()}: {m['content'][:300]}" for m in conversation[-6:]
         )
         resp = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama-3.1-8b-instant",
             messages=[{"role": "user", "content": extract_prompt + convo_text}],
             max_tokens=200,
         )
