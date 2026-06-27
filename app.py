@@ -27,6 +27,7 @@ from functools import wraps
 from dotenv import load_dotenv
 from supabase import create_client, Client
 from groq import Groq
+from openai import OpenAI
 import google.generativeai as genai
 import smtplib
 import re
@@ -36,7 +37,6 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 load_dotenv()
-BRIGHTDATA_API_KEY=os.getenv("BRIGHTDATA_API_KEY")
 
 # ── App setup ─────────────────────────────────────────────────────────────────
 app = Flask(__name__, template_folder='templates', static_folder='static')
@@ -67,14 +67,27 @@ supabase: Client = create_client(
 )
 groq_client = Groq(api_key=os.environ["GROQ_API_KEY"])
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+
+# ── Extra free LLM providers (fallback chain) ─────────────────────────────────
+CEREBRAS_API_KEY = os.environ.get("CEREBRAS_API_KEY", "")
+cerebras_client = OpenAI(
+    api_key=CEREBRAS_API_KEY or "dummy",
+    base_url="https://api.cerebras.ai/v1",
+) if CEREBRAS_API_KEY else None
+
+# DuckDuckGo AI Chat — completely free, no key needed
+ddg_client = OpenAI(
+    api_key="dummy",
+    base_url="https://duckduckgo.com/duckchat/v1/chat",
+)
 vision_model   = genai.GenerativeModel("gemini-1.5-flash")
-imagen_model   = genai.GenerativeModel("gemini-2.5-flash-preview-image-generation")
+imagen_model   = genai.GenerativeModel("gemini-2.0-flash-preview-image-generation")
 rzp_client = razorpay.Client(
     auth=(os.environ["RAZORPAY_KEY_ID"], os.environ["RAZORPAY_KEY_SECRET"])
 )
 
 FREE_LIMIT          = 10
-HISTORY_LIMIT       = 100
+HISTORY_LIMIT       = 200
 FREE_HISTORY_TTL    = 30
 MEMORY_LIMIT        = 20          # max stored memories per user
 ADMIN_EMAILS        = set(os.environ.get("ADMIN_EMAILS", "").split(","))
@@ -95,6 +108,114 @@ _LIVE_PATTERNS = re.compile(
     r"when (is|was|did)|where is|is .* (open|closed|available))\b",
     re.IGNORECASE,
 )
+
+
+# ── Unified LLM fallback chain ────────────────────────────────────────────────
+# Order: Groq 70B → Groq 8B → Cerebras → Gemini Flash → DuckDuckGo AI
+_OPENAI_PROVIDERS = [
+    {"name": "groq-70b",  "model": "llama-3.3-70b-versatile", "type": "groq"},
+    {"name": "groq-8b",   "model": "llama-3.1-8b-instant",    "type": "groq"},
+    {"name": "cerebras",  "model": "llama-3.3-70b",           "type": "openai_cerebras"},
+    {"name": "ddg",       "model": "gpt-4o-mini",             "type": "openai_ddg"},
+]
+
+# Gemini chat model — reuses existing GEMINI_API_KEY, no extra setup
+gemini_chat_model = genai.GenerativeModel("gemini-2.0-flash")
+
+def _is_rate_limit(err: Exception) -> bool:
+    s = str(err).lower()
+    return "rate_limit" in s or "429" in s or "quota" in s or "exceeded" in s or "resource_exhausted" in s
+
+def _gemini_chat(messages: list, max_tokens: int = 1024, stream: bool = False):
+    """Convert OpenAI-style messages to Gemini format and call Gemini."""
+    system_parts = [m["content"] for m in messages if m["role"] == "system"]
+    history = []
+    for m in messages:
+        if m["role"] == "system":
+            continue
+        role = "user" if m["role"] == "user" else "model"
+        history.append({"role": role, "parts": [m["content"]]})
+    
+    model = gemini_chat_model
+    if system_parts:
+        model = genai.GenerativeModel(
+            "gemini-2.0-flash",
+            system_instruction=system_parts[0],
+        )
+    
+    chat = model.start_chat(history=history[:-1] if len(history) > 1 else [])
+    last_msg = history[-1]["parts"][0] if history else ""
+    
+    if stream:
+        # Return a generator that mimics OpenAI streaming chunks
+        def _gemini_stream():
+            response = chat.send_message(
+                last_msg,
+                generation_config=genai.GenerationConfig(max_output_tokens=max_tokens),
+                stream=True,
+            )
+            for chunk in response:
+                yield chunk.text or ""
+        return _gemini_stream(), "gemini"
+    else:
+        response = chat.send_message(
+            last_msg,
+            generation_config=genai.GenerationConfig(max_output_tokens=max_tokens),
+        )
+        return response.text, "gemini"
+
+def llm_chat(messages: list, max_tokens: int = 1024, stream: bool = False):
+    """Try each provider in order; return (result, provider_name).
+    
+    For non-streaming: result is an OpenAI response object OR a plain string (Gemini).
+    For streaming:     result is an iterable of token strings (unified).
+    Callers should use: text = result.choices[0].message.content  OR  text = result (str)
+    Use llm_chat_text() below for a simpler string-returning wrapper.
+    """
+    last_err = None
+
+    # Try OpenAI-compatible providers first
+    for p in _OPENAI_PROVIDERS:
+        client = None
+        if p["type"] == "groq":
+            client = groq_client
+        elif p["type"] == "openai_cerebras" and cerebras_client:
+            client = cerebras_client
+        elif p["type"] == "openai_ddg":
+            client = ddg_client
+        if client is None:
+            continue
+        try:
+            result = client.chat.completions.create(
+                model=p["model"],
+                messages=messages,
+                max_tokens=max_tokens,
+                stream=stream,
+            )
+            return result, p["name"]
+        except Exception as e:
+            if _is_rate_limit(e):
+                last_err = e
+                continue
+            raise
+
+    # Gemini fallback (different SDK — handles it separately)
+    try:
+        return _gemini_chat(messages, max_tokens=max_tokens, stream=stream)
+    except Exception as e:
+        if _is_rate_limit(e):
+            last_err = e
+        else:
+            raise
+
+    raise last_err or RuntimeError("All LLM providers exhausted")
+
+
+def _extract_text(result, is_stream: bool = False):
+    """Normalise result from llm_chat into plain text (non-streaming only)."""
+    if isinstance(result, str):
+        return result   # Gemini non-stream returns plain string
+    return result.choices[0].message.content
 
 def needs_web_search(query: str) -> bool:
     """Return True when the query likely needs live web results."""
@@ -266,6 +387,7 @@ def format_search_context(results: list[dict]) -> str:
 
 # ── Manual search endpoint (frontend can call directly) ───────────────────────
 @app.route("/search", methods=["POST"])
+@login_required
 @limiter.limit("30/minute")
 def search_endpoint():
     """
@@ -304,7 +426,7 @@ def send_email(to: str, subject: str, html_body: str):
         msg["To"]      = to
         msg.attach(MIMEText(html_body, "html"))
 
-        with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as server:
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
             server.starttls()
             server.login(smtp_user, smtp_pass)
             server.sendmail(smtp_user, to, msg.as_string())
@@ -415,12 +537,11 @@ def extract_and_save_memories(uid: str, conversation: list):
         convo_text = "\n".join(
             f"{m['role'].upper()}: {m['content'][:300]}" for m in conversation[-6:]
         )
-        resp = groq_client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+        resp, _ = llm_chat(
             messages=[{"role": "user", "content": extract_prompt + convo_text}],
             max_tokens=200,
         )
-        text = resp.choices[0].message.content.strip()
+        text = _extract_text(resp).strip()
         if text.upper() != "NONE":
             for line in text.split("\n"):
                 line = line.strip("- •·").strip()
@@ -617,83 +738,7 @@ def login():
         "email_verified": user.get("email_verified", True),
     })
 
-# ── Google OAuth ───────────────────────────────────────────────────────────────
-@app.route("/auth/google")
-def google_auth():
-    from google_auth_oauthlib.flow import Flow
-    flow = Flow.from_client_config(
-        {
-            "web": {
-                "client_id": os.environ["GOOGLE_CLIENT_ID"],
-                "client_secret": os.environ["GOOGLE_CLIENT_SECRET"],
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://oauth2.googleapis.com/token",
-                "redirect_uris": [os.environ.get("SITE_URL", "") + "/auth/google/callback"],
-            }
-        },
-        scopes=["openid", "https://www.googleapis.com/auth/userinfo.email",
-                "https://www.googleapis.com/auth/userinfo.profile"],
-    )
-    flow.redirect_uri = os.environ.get("SITE_URL", "") + "/auth/google/callback"
-    auth_url, state = flow.authorization_url(access_type="offline", prompt="select_account")
-    session["oauth_state"] = state
-    return redirect(auth_url)
-
-@app.route("/auth/google/callback")
-def google_callback():
-    try:
-        from google_auth_oauthlib.flow import Flow
-        import google.auth.transport.requests
-        import requests as pyrequests
-        flow = Flow.from_client_config(
-            {
-                "web": {
-                    "client_id": os.environ["GOOGLE_CLIENT_ID"],
-                    "client_secret": os.environ["GOOGLE_CLIENT_SECRET"],
-                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                    "token_uri": "https://oauth2.googleapis.com/token",
-                    "redirect_uris": [os.environ.get("SITE_URL", "") + "/auth/google/callback"],
-                }
-            },
-            scopes=["openid", "https://www.googleapis.com/auth/userinfo.email",
-                    "https://www.googleapis.com/auth/userinfo.profile"],
-            state=session.get("oauth_state"),
-        )
-        flow.redirect_uri = os.environ.get("SITE_URL", "") + "/auth/google/callback"
-        flow.fetch_token(authorization_response=request.url)
-        creds = flow.credentials
-        resp = pyrequests.get(
-            "https://www.googleapis.com/oauth2/v2/userinfo",
-            headers={"Authorization": f"Bearer {creds.token}"}
-        )
-        info = resp.json()
-        email = info.get("email", "").lower()
-        name  = info.get("name", email.split("@")[0])
-
-        user = get_user_by_email(email)
-        if not user:
-            uid = str(uuid.uuid4())
-            role = "admin" if email in ADMIN_EMAILS else "user"
-            user = {
-                "id": uid, "name": name, "email": email,
-                "password": hash_pw(secrets.token_hex(16)),
-                "plan": "free", "joined": str(date.today()),
-                "email_verified": True, "role": role,
-            }
-            save_user(user)
-            log_event("register_google", uid)
-
-        session_token = str(uuid.uuid4())
-        set_session_token(user["id"], session_token)
-        session.permanent = True
-        session["user_id"] = user["id"]
-        session["session_token"] = session_token
-        log_event("login_google", user["id"])
-        return redirect("/")
-    except Exception as e:
-        app.logger.exception("Google OAuth callback failed")
-        return redirect("/?error=oauth_failed")
-
+# ── Forgot password ────────────────────────────────────────────────────────────
 # ── Forgot password ────────────────────────────────────────────────────────────
 @app.route("/forgot-password", methods=["POST"])
 @limiter.limit("3/minute; 10/hour")
@@ -864,19 +909,29 @@ def chat_stream():
 
         full_reply = []
         try:
-            stream = groq_client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[{"role": "system", "content": system_prompt}] + clean_messages,
-                max_tokens=2048,
-                stream=True,
-            )
+            # Try primary model, fall back to faster/cheaper model on rate limit
+            stream, _provider = llm_chat(
+                    messages=[{"role": "system", "content": system_prompt}] + clean_messages,
+                    max_tokens=1024,
+                    stream=True,
+                )
             for chunk in stream:
                 delta = chunk.choices[0].delta.content or ""
                 if delta:
                     full_reply.append(delta)
                     yield f"data: {json.dumps({'token': delta})}\n\n"
         except Exception as e:
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+            err_str = str(e)
+            if "rate_limit" in err_str or "429" in err_str or "Rate limit" in err_str:
+                friendly = "Rate limit reached. Please wait a moment and try again."
+            elif "quota" in err_str.lower() or "exceeded" in err_str.lower():
+                friendly = "Daily quota exceeded. Please try again tomorrow."
+            elif "timeout" in err_str.lower():
+                friendly = "Request timed out. Please try again."
+            else:
+                friendly = "Something went wrong. Please try again."
+            app.logger.warning(f"Groq stream error: {err_str}")
+            yield f"data: {json.dumps({'error': friendly})}\n\n"
             return
 
         # Save to DB after stream completes
@@ -933,12 +988,11 @@ def chat():
         + mem_block
     )
     try:
-        resp = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+        resp, _provider = llm_chat(
             messages=[{"role": "system", "content": system_prompt}] + clean_messages,
-            max_tokens=2048,
+            max_tokens=1024,
         )
-        reply = resp.choices[0].message.content
+        reply = _extract_text(resp)
         uid = user["id"]
         add_history(uid, "user", clean_messages[-1]["content"])
         add_history(uid, "assistant", reply)
@@ -976,7 +1030,9 @@ def analyze_image():
         reply = resp.text
         add_history(user["id"], "user", f"[Image] {question}")
         add_history(user["id"], "assistant", reply)
-        return jsonify({"reply": reply})
+        used = get_today_usage(user["id"])
+        remaining = 999 if user["plan"] == "pro" else max(0, FREE_LIMIT - used)
+        return jsonify({"reply": reply, "remaining": remaining})
     except Exception:
         app.logger.exception("Image analysis failed")
         return jsonify({"error": "Image processing failed."}), 500
@@ -999,7 +1055,7 @@ def generate_image():
     try:
         response = imagen_model.generate_content(
             contents=prompt,
-            
+            generation_config=genai.GenerationConfig(response_modalities=["IMAGE", "TEXT"]),
         )
         for part in response.candidates[0].content.parts:
             if part.inline_data:
@@ -1066,18 +1122,19 @@ def analyze_file():
         else:
             text = file.read().decode("utf-8", errors="ignore")
         text = text[:8000]
-        resp = groq_client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+        resp, _provider = llm_chat(
             messages=[
                 {"role": "system", "content": "You are SUNAI, a helpful AI assistant."},
                 {"role": "user",   "content": f"File:\n\n{text}\n\nQuestion: {question}"},
             ],
             max_tokens=2048,
         )
-        reply = resp.choices[0].message.content
+        reply = _extract_text(resp)
         add_history(user["id"], "user", f"[File: {file.filename}] {question}")
         add_history(user["id"], "assistant", reply)
-        return jsonify({"reply": reply})
+        used = get_today_usage(user["id"])
+        remaining = 999 if user["plan"] == "pro" else max(0, FREE_LIMIT - used)
+        return jsonify({"reply": reply, "remaining": remaining})
     except Exception:
         app.logger.exception("File analysis failed")
         return jsonify({"error": "File processing failed."}), 500
