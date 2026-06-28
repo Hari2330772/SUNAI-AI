@@ -460,7 +460,7 @@ textarea::placeholder{color:var(--subtle)}
         <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
         <span class="tooltip">Voice Input</span>
       </button>
-      <span class="input-hint" id="input-hint">SUNAI v5.0 · Enter to send</span>
+      <span class="input-hint" id="input-hint">SUNAI v6.0 · Enter to send</span>
     </div>
   </div>
 </div>
@@ -809,7 +809,7 @@ function setMode(mode) {
   document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('tab-' + mode)?.classList.add('active');
   if (mode === 'chat') {
-    document.getElementById('input-hint').innerText = 'SUNAI v5.0 · Enter to send';
+    document.getElementById('input-hint').innerText = 'SUNAI v6.0 · Enter to send';
     inpEl.placeholder = 'Ask SUNAI anything…';
   } else if (mode === 'imagine') {
     document.getElementById('input-hint').innerText = 'Describe an image to generate';
