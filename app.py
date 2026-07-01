@@ -156,25 +156,47 @@ def check_pw(pw: str, hashed: str) -> bool:
 
 # ── Email helper ──────────────────────────────────────────────────────────────
 def send_email(to: str, subject: str, html_body: str):
-    try:
-        smtp_host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
-        smtp_port = int(os.environ.get("SMTP_PORT", "587"))
-        smtp_user = os.environ.get("SMTP_USER", "")
-        smtp_pass = os.environ.get("SMTP_PASS", "")
-        from_name = os.environ.get("FROM_NAME", "SUNAI")
+    smtp_host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
+    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+    smtp_user = os.environ.get("SMTP_USER", "")
+    smtp_pass = os.environ.get("SMTP_PASS", "")
+    from_name = os.environ.get("FROM_NAME", "SUNAI")
 
+    # Guard: don't even attempt to connect if credentials aren't configured.
+    # This is what was causing the SMTP connection to hang indefinitely and
+    # trigger a gunicorn worker timeout (misreported as "out of memory").
+    if not smtp_user or not smtp_pass:
+        app.logger.error(
+            "Email send skipped: SMTP_USER/SMTP_PASS not configured in environment"
+        )
+        return False
+
+    try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
         msg["From"]    = f"{from_name} <{smtp_user}>"
         msg["To"]      = to
         msg.attach(MIMEText(html_body, "html"))
 
-        with smtplib.SMTP(smtp_host, smtp_port) as server:
+        # timeout=10 ensures a hung/unreachable SMTP server fails fast instead
+        # of blocking the gunicorn worker until it gets killed.
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as server:
             server.starttls()
             server.login(smtp_user, smtp_pass)
             server.sendmail(smtp_user, to, msg.as_string())
+        return True
+    except smtplib.SMTPAuthenticationError:
+        app.logger.error(
+            "Email send failed: SMTP authentication rejected — check SMTP_USER/SMTP_PASS "
+            "(if using Gmail, this must be an App Password, not your regular password)"
+        )
+        return False
+    except (TimeoutError, OSError) as e:
+        app.logger.error(f"Email send failed: could not reach SMTP server — {e}")
+        return False
     except Exception as e:
         app.logger.error(f"Email send failed: {e}")
+        return False
 
 # ── Supabase helpers ──────────────────────────────────────────────────────────
 def get_user_by_id(uid):
@@ -493,13 +515,13 @@ def google_auth():
                 "client_secret": os.environ["GOOGLE_CLIENT_SECRET"],
                 "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                 "token_uri": "https://oauth2.googleapis.com/token",
-                "redirect_uris": [os.environ.get("SITE_URL", "") + "/auth/google/callback"],
+                "redirect_uris": [os.environ.get("SITE_URL", "https://sunai.onrender.com") + "/auth/google/callback"],
             }
         },
         scopes=["openid", "https://www.googleapis.com/auth/userinfo.email",
                 "https://www.googleapis.com/auth/userinfo.profile"],
     )
-    flow.redirect_uri = os.environ.get("SITE_URL", "") + "/auth/google/callback"
+    flow.redirect_uri = os.environ.get("SITE_URL", "https://sunai.onrender.com") + "/auth/google/callback"
     auth_url, state = flow.authorization_url(access_type="offline", prompt="select_account")
     session["oauth_state"] = state
     return redirect(auth_url)
@@ -517,14 +539,14 @@ def google_callback():
                     "client_secret": os.environ["GOOGLE_CLIENT_SECRET"],
                     "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                     "token_uri": "https://oauth2.googleapis.com/token",
-                    "redirect_uris": [os.environ.get("SITE_URL", "") + "/auth/google/callback"],
+                    "redirect_uris": [os.environ.get("SITE_URL", "https://sunai.onrender.com") + "/auth/google/callback"],
                 }
             },
             scopes=["openid", "https://www.googleapis.com/auth/userinfo.email",
                     "https://www.googleapis.com/auth/userinfo.profile"],
             state=session.get("oauth_state"),
         )
-        flow.redirect_uri = os.environ.get("SITE_URL", "") + "/auth/google/callback"
+        flow.redirect_uri = os.environ.get("SITE_URL", "https://sunai.onrender.com") + "/auth/google/callback"
         flow.fetch_token(authorization_response=request.url)
         creds = flow.credentials
         resp = pyrequests.get(
