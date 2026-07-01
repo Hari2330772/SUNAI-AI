@@ -385,6 +385,34 @@ def _check_quota(user: dict):
         }), 429)
     return True, None
 
+# Keep only the most recent N messages, and cap each message's length, to
+# stay comfortably under the LLM provider's per-minute token budget. Sending
+# the full 40-message/8000-char window (the old limits) was large enough to
+# trip Groq's free-tier TPM limit and surface a raw JSON error to users.
+CHAT_HISTORY_WINDOW = 16
+CHAT_MSG_MAX_CHARS  = 3000
+
+def _clean_messages(raw_messages: list) -> list:
+    return [
+        {"role": m["role"] if m.get("role") in ("user", "assistant") else "user",
+         "content": str(m.get("content", ""))[:CHAT_MSG_MAX_CHARS]}
+        for m in raw_messages[-CHAT_HISTORY_WINDOW:]
+    ]
+
+def _friendly_llm_error(e: Exception) -> str:
+    """Turn raw provider exceptions (rate limits, oversized requests, etc.)
+    into a message that's safe and sensible to show a user, instead of
+    leaking raw JSON/API internals."""
+    msg = str(e)
+    if "rate_limit_exceeded" in msg or "Request too large" in msg or "413" in msg:
+        return ("This conversation has gotten long enough to hit a temporary rate limit. "
+                "Try clearing some older history, or send a shorter message.")
+    if "429" in msg or "rate limit" in msg.lower():
+        return "We're getting a lot of requests right now — please try again in a moment."
+    if "invalid_api_key" in msg or "401" in msg:
+        return "The AI service is temporarily unavailable. Please try again shortly."
+    return "Something went wrong generating a response. Please try again."
+
 # ─────────────────────────────────────────────────────────────────────────────
 # ROUTES
 # ─────────────────────────────────────────────────────────────────────────────
@@ -731,13 +759,7 @@ def chat_stream():
     if not messages:
         return jsonify({"error": "No message provided"}), 400
 
-    clean_messages = [
-        {"role": m["role"] if m.get("role") in ("user", "assistant") else "user",
-         "content": str(m.get("content", ""))[:8000]}
-        for m in messages[-40:]
-    ]
-
-    # Inject AI memories into system prompt
+    clean_messages = _clean_messages(messages)
     memories = get_memories(user["id"])
     mem_block = ""
     if memories:
@@ -779,7 +801,8 @@ def chat_stream():
                     full_reply.append(delta)
                     yield f"data: {json.dumps({'token': delta})}\n\n"
         except Exception as e:
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+            app.logger.error(f"chat_stream groq error: {e}")
+            yield f"data: {json.dumps({'error': _friendly_llm_error(e)})}\n\n"
             return
 
         # Save to DB after stream completes
@@ -819,11 +842,7 @@ def chat():
     messages = (request.get_json(silent=True) or {}).get("messages", [])
     if not messages:
         return jsonify({"error": "No message provided"}), 400
-    clean_messages = [
-        {"role": m["role"] if m.get("role") in ("user", "assistant") else "user",
-         "content": str(m.get("content", ""))[:8000]}
-        for m in messages[-40:]
-    ]
+    clean_messages = _clean_messages(messages)
     memories  = get_memories(user["id"])
     mem_block = ("\n\nKnown facts about this user:\n" + "\n".join(f"- {m}" for m in memories)) if memories else ""
     last_user_msg = next((m["content"] for m in reversed(clean_messages) if m["role"] == "user"), "")
@@ -848,9 +867,9 @@ def chat():
         used = get_today_usage(uid)
         remaining = 999 if user["plan"] == "pro" else max(0, FREE_LIMIT - used)
         return jsonify({"reply": reply, "remaining": remaining, "plan": user["plan"]})
-    except Exception:
+    except Exception as e:
         app.logger.exception("Chat failed")
-        return jsonify({"error": "Processing failed."}), 500
+        return jsonify({"error": _friendly_llm_error(e)}), 500
 
 # ── Image analysis ──────────────────────────────────────────────────────────────
 @app.route("/analyze-image", methods=["POST"])
