@@ -67,7 +67,11 @@ supabase: Client = create_client(
 groq_client = Groq(api_key=os.environ["GROQ_API_KEY"])
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 vision_model   = genai.GenerativeModel("gemini-1.5-flash")
-imagen_model   = genai.GenerativeModel("gemini-2.0-flash-preview-image-generation")
+# "gemini-2.0-flash-preview-image-generation" was retired by Google — the
+# current native Gemini image generation model (nicknamed "Nano Banana") is
+# gemini-2.5-flash-image, which works with this same generate_content() call
+# pattern and returns image data via response parts' inline_data, same as before.
+imagen_model   = genai.GenerativeModel("gemini-2.5-flash-image")
 rzp_client = razorpay.Client(
     auth=(os.environ["RAZORPAY_KEY_ID"], os.environ["RAZORPAY_KEY_SECRET"])
 )
@@ -917,10 +921,7 @@ def generate_image():
     if not prompt:
         return jsonify({"error": "No prompt provided"}), 400
     try:
-        response = imagen_model.generate_content(
-            contents=prompt,
-            generation_config={"response_modalities": ["IMAGE", "TEXT"]},
-        )
+        response = imagen_model.generate_content(contents=prompt)
         for part in response.candidates[0].content.parts:
             if part.inline_data:
                 img_b64 = base64.b64encode(part.inline_data.data).decode()
