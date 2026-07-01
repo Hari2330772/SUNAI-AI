@@ -505,9 +505,25 @@ def login():
     })
 
 # ── Google OAuth ───────────────────────────────────────────────────────────────
-@app.route("/auth/google")
-def google_auth():
+def _generate_pkce_pair():
+    """Manually generate a PKCE code_verifier/code_challenge pair.
+
+    We do this ourselves instead of relying on google-auth-oauthlib's
+    built-in PKCE handling because its behaviour (whether it auto-generates
+    a verifier, and whether the `code_verifier` attribute survives being
+    read back out) is inconsistent across library versions and was the
+    root cause of repeated "invalid_grant: Missing code verifier" errors.
+    Generating and passing these values explicitly on every call removes
+    that ambiguity entirely.
+    """
+    verifier = secrets.token_urlsafe(64)[:128]
+    digest = hashlib.sha256(verifier.encode("utf-8")).digest()
+    challenge = base64.urlsafe_b64encode(digest).decode("utf-8").rstrip("=")
+    return verifier, challenge
+
+def _google_flow(state=None):
     from google_auth_oauthlib.flow import Flow
+    redirect_uri = os.environ.get("SITE_URL", "https://sunai.onrender.com") + "/auth/google/callback"
     flow = Flow.from_client_config(
         {
             "web": {
@@ -515,39 +531,40 @@ def google_auth():
                 "client_secret": os.environ["GOOGLE_CLIENT_SECRET"],
                 "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                 "token_uri": "https://oauth2.googleapis.com/token",
-                "redirect_uris": [os.environ.get("SITE_URL", "https://sunai.onrender.com") + "/auth/google/callback"],
+                "redirect_uris": [redirect_uri],
             }
         },
         scopes=["openid", "https://www.googleapis.com/auth/userinfo.email",
                 "https://www.googleapis.com/auth/userinfo.profile"],
+        state=state,
     )
-    flow.redirect_uri = os.environ.get("SITE_URL", "https://sunai.onrender.com") + "/auth/google/callback"
-    auth_url, state = flow.authorization_url(access_type="offline", prompt="select_account")
+    flow.redirect_uri = redirect_uri
+    return flow
+
+@app.route("/auth/google")
+def google_auth():
+    flow = _google_flow()
+    code_verifier, code_challenge = _generate_pkce_pair()
+    auth_url, state = flow.authorization_url(
+        access_type="offline",
+        prompt="select_account",
+        code_challenge=code_challenge,
+        code_challenge_method="S256",
+    )
     session["oauth_state"] = state
+    session["oauth_code_verifier"] = code_verifier
     return redirect(auth_url)
 
 @app.route("/auth/google/callback")
 def google_callback():
     try:
-        from google_auth_oauthlib.flow import Flow
-        import google.auth.transport.requests
         import requests as pyrequests
-        flow = Flow.from_client_config(
-            {
-                "web": {
-                    "client_id": os.environ["GOOGLE_CLIENT_ID"],
-                    "client_secret": os.environ["GOOGLE_CLIENT_SECRET"],
-                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                    "token_uri": "https://oauth2.googleapis.com/token",
-                    "redirect_uris": [os.environ.get("SITE_URL", "https://sunai.onrender.com") + "/auth/google/callback"],
-                }
-            },
-            scopes=["openid", "https://www.googleapis.com/auth/userinfo.email",
-                    "https://www.googleapis.com/auth/userinfo.profile"],
-            state=session.get("oauth_state"),
-        )
-        flow.redirect_uri = os.environ.get("SITE_URL", "https://sunai.onrender.com") + "/auth/google/callback"
-        flow.fetch_token(authorization_response=request.url)
+        flow = _google_flow(state=session.get("oauth_state"))
+        code_verifier = session.get("oauth_code_verifier")
+        # Pass code_verifier explicitly as a kwarg — fetch_token() only falls
+        # back to self.code_verifier if this isn't provided, so passing it
+        # directly guarantees it's used regardless of library internals.
+        flow.fetch_token(authorization_response=request.url, code_verifier=code_verifier)
         creds = flow.credentials
         resp = pyrequests.get(
             "https://www.googleapis.com/oauth2/v2/userinfo",
