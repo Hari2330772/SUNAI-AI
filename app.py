@@ -28,7 +28,12 @@ from dotenv import load_dotenv
 from supabase import create_client, Client
 from groq import Groq
 from openai import OpenAI
-import google.generativeai as genai
+try:
+    import google.generativeai as genai
+    _GENAI_AVAILABLE = True
+except ImportError:
+    _GENAI_AVAILABLE = False
+    genai = None
 import smtplib
 import re
 import urllib.request
@@ -127,6 +132,8 @@ def _is_rate_limit(err: Exception) -> bool:
     return "rate_limit" in s or "429" in s or "quota" in s or "exceeded" in s or "resource_exhausted" in s
 
 def _gemini_chat(messages: list, max_tokens: int = 1024, stream: bool = False):
+    if not _GENAI_AVAILABLE or gemini_chat_model is None:
+        raise RuntimeError("Gemini not available")
     """Convert OpenAI-style messages to Gemini format."""
     system_parts = [m["content"] for m in messages if m["role"] == "system"]
     history = []
