@@ -1047,20 +1047,20 @@ function renderHistList() {
                 : raw;
     const display = escHtml(label.substring(0, 30)) + (label.length > 30 ? '…' : '');
     const isFirst = i === userMsgs.length - 1;
-    html += \`<div class="hist-item" \${isFirst ? 'style="background:var(--s1)"' : ''}>
+    html += `<div class="hist-item" ${isFirst ? 'style="background:var(--s1)"' : ''}>
       <div class="hist-item-left">
         <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        <span>\${display}</span>
+        <span>${display}</span>
       </div>
-    </div>\`;
+    </div>`;
   });
 
-  html += \`<div style="margin-top:8px">
+  html += `<div style="margin-top:8px">
     <button class="hist-delete-btn" style="width:100%;padding:6px;font-size:12px;color:var(--subtle)" onclick="clearHistoryLogs(event)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;vertical-align:-2px;margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
       Clear all history
     </button>
-  </div>\`;
+  </div>`;
 
   histBody.innerHTML = html;
 }
