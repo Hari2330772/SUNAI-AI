@@ -14,6 +14,7 @@ import hashlib
 import time
 import base64
 import secrets
+import threading
 import magic
 import bcrypt
 import razorpay
@@ -455,7 +456,7 @@ def check_pw(pw: str, hashed: str) -> bool:
     return bcrypt.checkpw(pw.encode(), hashed.encode())
 
 # ── Email helper ──────────────────────────────────────────────────────────────
-def send_email(to: str, subject: str, html_body: str):
+def _send_email_sync(to: str, subject: str, html_body: str):
     try:
         smtp_host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
         smtp_port = int(os.environ.get("SMTP_PORT", "587"))
@@ -469,12 +470,21 @@ def send_email(to: str, subject: str, html_body: str):
         msg["To"]      = to
         msg.attach(MIMEText(html_body, "html"))
 
-        with smtplib.SMTP(smtp_host, smtp_port) as server:
+        # timeout=10 is critical: without it, a blocked/unreachable SMTP port
+        # hangs forever and eventually kills the whole gunicorn worker.
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as server:
             server.starttls()
             server.login(smtp_user, smtp_pass)
             server.sendmail(smtp_user, to, msg.as_string())
     except Exception as e:
         app.logger.error(f"Email send failed: {e}")
+
+def send_email(to: str, subject: str, html_body: str):
+    # Fire-and-forget in a background thread so signup/login never blocks
+    # waiting on an SMTP server that may be slow, misconfigured, or unreachable.
+    threading.Thread(
+        target=_send_email_sync, args=(to, subject, html_body), daemon=True
+    ).start()
 
 # ── Supabase helpers ──────────────────────────────────────────────────────────
 def get_user_by_id(uid):
