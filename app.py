@@ -1,5 +1,5 @@
 """
-SUNAI v5.0 — Complete Production Backend
+Aethrion v1.0 — Intelligence Without Limits
 Features:
   v4.0: Streaming responses, markdown, syntax highlighting, stop generation
   v4.1: Google Sign-In, Forgot Password, Email verification
@@ -27,6 +27,7 @@ from functools import wraps
 from dotenv import load_dotenv
 from supabase import create_client, Client
 from groq import Groq
+from openai import OpenAI
 import google.generativeai as genai
 import smtplib
 import re
@@ -66,27 +67,38 @@ supabase: Client = create_client(
 )
 groq_client = Groq(api_key=os.environ["GROQ_API_KEY"])
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+
+# ── Extra free LLM providers (fallback chain) ─────────────────────────────────
+CEREBRAS_API_KEY = os.environ.get("CEREBRAS_API_KEY", "")
+cerebras_client = OpenAI(
+    api_key=CEREBRAS_API_KEY or "dummy",
+    base_url="https://api.cerebras.ai/v1",
+) if CEREBRAS_API_KEY else None
+
+# DuckDuckGo AI Chat — completely free, no key needed
+ddg_client = OpenAI(
+    api_key="dummy",
+    base_url="https://duckduckgo.com/duckchat/v1/chat",
+)
 vision_model   = genai.GenerativeModel("gemini-1.5-flash")
-# "gemini-2.0-flash-preview-image-generation" was retired by Google — the
-# current native Gemini image generation model (nicknamed "Nano Banana") is
-# gemini-2.5-flash-image, which works with this same generate_content() call
-# pattern and returns image data via response parts' inline_data, same as before.
-imagen_model   = genai.GenerativeModel("gemini-2.5-flash-image")
+imagen_model   = genai.GenerativeModel("gemini-2.0-flash-preview-image-generation")
 rzp_client = razorpay.Client(
     auth=(os.environ["RAZORPAY_KEY_ID"], os.environ["RAZORPAY_KEY_SECRET"])
 )
 
 FREE_LIMIT          = 10
-HISTORY_LIMIT       = 100
+HISTORY_LIMIT       = 200
 FREE_HISTORY_TTL    = 30
 MEMORY_LIMIT        = 20          # max stored memories per user
 ADMIN_EMAILS        = set(os.environ.get("ADMIN_EMAILS", "").split(","))
 
 
-# ── Web Search (Serper API) ───────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# WEB SEARCH — Serper (primary) + DuckDuckGo (free fallback, no key needed)
+# ══════════════════════════════════════════════════════════════════════════════
 SERPER_API_KEY = os.environ.get("SERPER_API_KEY", "")
 
-# Keywords that strongly signal the user wants current / live information
+# Queries that signal the user needs live / current information
 _LIVE_PATTERNS = re.compile(
     r"\b(today|tonight|yesterday|this week|this month|this year|right now|"
     r"current(ly)?|latest|recent(ly)?|new(est)?|just (announced|released|happened)|"
@@ -97,17 +109,124 @@ _LIVE_PATTERNS = re.compile(
     re.IGNORECASE,
 )
 
+
+# ── Unified LLM fallback chain ────────────────────────────────────────────────
+# Order: Groq 70B → Groq 8B → Cerebras → Gemini Flash → DuckDuckGo AI
+_OPENAI_PROVIDERS = [
+    {"name": "groq-70b",  "model": "llama-3.3-70b-versatile", "type": "groq"},
+    {"name": "groq-8b",   "model": "llama-3.1-8b-instant",    "type": "groq"},
+    {"name": "cerebras",  "model": "llama-3.3-70b",           "type": "openai_cerebras"},
+    {"name": "ddg",       "model": "gpt-4o-mini",             "type": "openai_ddg"},
+]
+
+# Gemini chat model — reuses existing GEMINI_API_KEY, no extra setup
+gemini_chat_model = genai.GenerativeModel("gemini-2.0-flash")
+
+def _is_rate_limit(err: Exception) -> bool:
+    s = str(err).lower()
+    return "rate_limit" in s or "429" in s or "quota" in s or "exceeded" in s or "resource_exhausted" in s
+
+def _gemini_chat(messages: list, max_tokens: int = 1024, stream: bool = False):
+    """Convert OpenAI-style messages to Gemini format and call Gemini."""
+    system_parts = [m["content"] for m in messages if m["role"] == "system"]
+    history = []
+    for m in messages:
+        if m["role"] == "system":
+            continue
+        role = "user" if m["role"] == "user" else "model"
+        history.append({"role": role, "parts": [m["content"]]})
+    
+    model = gemini_chat_model
+    if system_parts:
+        model = genai.GenerativeModel(
+            "gemini-2.0-flash",
+            system_instruction=system_parts[0],
+        )
+    
+    chat = model.start_chat(history=history[:-1] if len(history) > 1 else [])
+    last_msg = history[-1]["parts"][0] if history else ""
+    
+    if stream:
+        # Return a generator that mimics OpenAI streaming chunks
+        def _gemini_stream():
+            response = chat.send_message(
+                last_msg,
+                generation_config=genai.GenerationConfig(max_output_tokens=max_tokens),
+                stream=True,
+            )
+            for chunk in response:
+                yield chunk.text or ""
+        return _gemini_stream(), "gemini"
+    else:
+        response = chat.send_message(
+            last_msg,
+            generation_config=genai.GenerationConfig(max_output_tokens=max_tokens),
+        )
+        return response.text, "gemini"
+
+def llm_chat(messages: list, max_tokens: int = 1024, stream: bool = False):
+    """Try each provider in order; return (result, provider_name).
+    
+    For non-streaming: result is an OpenAI response object OR a plain string (Gemini).
+    For streaming:     result is an iterable of token strings (unified).
+    Callers should use: text = result.choices[0].message.content  OR  text = result (str)
+    Use llm_chat_text() below for a simpler string-returning wrapper.
+    """
+    last_err = None
+
+    # Try OpenAI-compatible providers first
+    for p in _OPENAI_PROVIDERS:
+        client = None
+        if p["type"] == "groq":
+            client = groq_client
+        elif p["type"] == "openai_cerebras" and cerebras_client:
+            client = cerebras_client
+        elif p["type"] == "openai_ddg":
+            client = ddg_client
+        if client is None:
+            continue
+        try:
+            result = client.chat.completions.create(
+                model=p["model"],
+                messages=messages,
+                max_tokens=max_tokens,
+                stream=stream,
+            )
+            return result, p["name"]
+        except Exception as e:
+            if _is_rate_limit(e):
+                last_err = e
+                continue
+            raise
+
+    # Gemini fallback (different SDK — handles it separately)
+    try:
+        return _gemini_chat(messages, max_tokens=max_tokens, stream=stream)
+    except Exception as e:
+        if _is_rate_limit(e):
+            last_err = e
+        else:
+            raise
+
+    raise last_err or RuntimeError("All LLM providers exhausted")
+
+
+def _extract_text(result, is_stream: bool = False):
+    """Normalise result from llm_chat into plain text (non-streaming only)."""
+    if isinstance(result, str):
+        return result   # Gemini non-stream returns plain string
+    return result.choices[0].message.content
+
 def needs_web_search(query: str) -> bool:
-    """Decide whether to fetch live web results for this query."""
-    if not SERPER_API_KEY:
-        return False
+    """Return True when the query likely needs live web results."""
     return bool(_LIVE_PATTERNS.search(query))
 
-def web_search(query: str, num: int = 5) -> list[dict]:
+
+# ── Provider 1: Serper.dev  (Google Search, 2 500 free queries/month) ─────────
+def _search_serper(query: str, num: int = 5) -> list[dict]:
     """
-    Call Serper.dev Google Search API.
-    Returns a list of {title, snippet, link} dicts.
-    Free plan: 2 500 queries/month — https://serper.dev
+    https://serper.dev  → sign up → API Key (free tier: 2 500/month)
+    Set SERPER_API_KEY in .env to enable.
     """
     if not SERPER_API_KEY:
         return []
@@ -116,40 +235,203 @@ def web_search(query: str, num: int = 5) -> list[dict]:
         req = urllib.request.Request(
             "https://google.serper.dev/search",
             data=payload,
-            headers={
-                "X-API-KEY": SERPER_API_KEY,
-                "Content-Type": "application/json",
-            },
+            headers={"X-API-KEY": SERPER_API_KEY,
+                     "Content-Type": "application/json"},
             method="POST",
         )
         with urllib.request.urlopen(req, timeout=6) as resp:
             data = json.loads(resp.read())
-        results = []
-        for item in data.get("organic", [])[:num]:
-            results.append({
-                "title":   item.get("title", ""),
-                "snippet": item.get("snippet", ""),
-                "link":    item.get("link", ""),
-            })
-        return results
+        return [
+            {"title":   item.get("title", ""),
+             "snippet": item.get("snippet", ""),
+             "link":    item.get("link", "")}
+            for item in data.get("organic", [])[:num]
+        ]
     except Exception as e:
-        app.logger.warning(f"web_search error: {e}")
+        app.logger.warning("Serper search error: %s", e)
         return []
 
+
+# ── Provider 2: DuckDuckGo  (completely free, no API key) ─────────────────────
+def _search_ddg(query: str, num: int = 5) -> list[dict]:
+    """
+    Uses DuckDuckGo's unofficial instant-answer + HTML endpoints.
+    No API key required. Rate-limited by DDG (~1 req/sec is safe).
+
+    Strategy:
+      1. Try the DuckDuckGo Instant Answer JSON API (fast, structured).
+      2. If that returns nothing useful, scrape the lite HTML endpoint.
+    """
+    results: list[dict] = []
+
+    # ── Step 1: Instant Answer API ───────────────────────────────────────────
+    try:
+        encoded = urllib.parse.quote_plus(query)
+        url = f"https://api.duckduckgo.com/?q={encoded}&format=json&no_html=1&skip_disambig=1"
+        req = urllib.request.Request(url, headers={"User-Agent": "Aethrion/5.0"})
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            data = json.loads(resp.read())
+
+        # Abstract result (Wikipedia-style answer)
+        if data.get("AbstractText") and data.get("AbstractURL"):
+            results.append({
+                "title":   data.get("Heading", query),
+                "snippet": data["AbstractText"][:300],
+                "link":    data["AbstractURL"],
+            })
+
+        # Related topics
+        for topic in data.get("RelatedTopics", []):
+            if len(results) >= num:
+                break
+            # Topics can be nested groups
+            if "Topics" in topic:
+                for sub in topic["Topics"]:
+                    if len(results) >= num:
+                        break
+                    text = sub.get("Text", "")
+                    url_ = sub.get("FirstURL", "")
+                    if text and url_:
+                        results.append({"title": text[:80], "snippet": text[:250], "link": url_})
+            else:
+                text = topic.get("Text", "")
+                url_ = topic.get("FirstURL", "")
+                if text and url_:
+                    results.append({"title": text[:80], "snippet": text[:250], "link": url_})
+    except Exception as e:
+        app.logger.warning("DDG instant API error: %s", e)
+
+    # ── Step 2: Lite HTML scraper fallback ────────────────────────────────────
+    if len(results) < 2:
+        try:
+            encoded = urllib.parse.quote_plus(query)
+            url  = f"https://lite.duckduckgo.com/lite/?q={encoded}"
+            req  = urllib.request.Request(url, headers={
+                "User-Agent": "Mozilla/5.0 (compatible; Aethrion/5.0)",
+                "Accept-Language": "en-US,en;q=0.9",
+            })
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                html = resp.read().decode("utf-8", errors="ignore")
+
+            # Parse result snippets — DDG lite uses <a class="result-link"> and
+            # nearby <td> cells for snippet text.
+            link_pattern   = re.compile(
+                r'<a[^>]+class="result-link"[^>]*href="([^"]+)"[^>]*>([^<]+)<', re.S)
+            snippet_pattern = re.compile(
+                r'<td[^>]+class="result-snippet"[^>]*>(.*?)</td>', re.S)
+
+            links   = link_pattern.findall(html)
+            snippets = [re.sub(r'<[^>]+>', '', s).strip()
+                        for s in snippet_pattern.findall(html)]
+
+            for i, (href, title) in enumerate(links[:num]):
+                snippet = snippets[i] if i < len(snippets) else ""
+                # DDG lite uses redirect URLs — extract the real URL
+                real_url = href
+                uddg_match = re.search(r'uddg=([^&]+)', href)
+                if uddg_match:
+                    try:
+                        real_url = urllib.parse.unquote(uddg_match.group(1))
+                    except Exception:
+                        pass
+                results.append({
+                    "title":   title.strip()[:120],
+                    "snippet": snippet[:300],
+                    "link":    real_url,
+                })
+                if len(results) >= num:
+                    break
+        except Exception as e:
+            app.logger.warning("DDG HTML scrape error: %s", e)
+
+    return results[:num]
+
+
+# ── Unified search dispatcher ──────────────────────────────────────────────────
+def web_search(query: str, num: int = 5) -> list[dict]:
+    """
+    Try Serper first (if key is set). Fall back to DuckDuckGo automatically.
+    Always returns a list of {title, snippet, link} dicts (may be empty).
+    """
+    if SERPER_API_KEY:
+        results = _search_serper(query, num)
+        if results:
+            return results
+        app.logger.info("Serper returned empty — falling back to DuckDuckGo")
+
+    return _search_ddg(query, num)
+
+
+# ── Search context formatter ───────────────────────────────────────────────────
 def format_search_context(results: list[dict]) -> str:
-    """Turn search results into a compact context block for the prompt."""
+    """Turn search results into a compact context block injected into the prompt."""
     if not results:
         return ""
-    lines = ["--- WEB SEARCH RESULTS (today's date injected below) ---",
-             f"Current date: {datetime.utcnow().strftime('%B %d, %Y')} UTC", ""]
+    lines = [
+        "--- WEB SEARCH RESULTS ---",
+        f"Current date: {datetime.utcnow().strftime('%B %d, %Y')} UTC",
+        "",
+    ]
     for i, r in enumerate(results, 1):
         lines.append(f"[{i}] {r['title']}")
         lines.append(f"    {r['snippet']}")
         lines.append(f"    Source: {r['link']}")
         lines.append("")
-    lines.append("--- END OF SEARCH RESULTS ---")
-    lines.append("Use the above results to answer accurately. Cite sources as [1], [2] etc. when relevant.")
+    lines += [
+        "--- END OF SEARCH RESULTS ---",
+        "Use the above results to answer accurately. "
+        "Cite sources using [1], [2] etc. when you use them.",
+    ]
     return "\n".join(lines)
+
+
+# ── Auth decorator ─────────────────────────────────────────────────────────────
+def login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        uid   = session.get("user_id")
+        token = session.get("session_token")
+        if not uid or not token:
+            return jsonify({"error": "login_required"}), 401
+        if not verify_session_token(uid, token):
+            session.clear()
+            return jsonify({"error": "session_expired"}), 401
+        return f(*args, **kwargs)
+    return decorated
+
+def admin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        uid = session.get("user_id")
+        if not uid:
+            return jsonify({"error": "login_required"}), 401
+        user = get_user_by_id(uid)
+        if not user or user.get("role") != "admin":
+            return jsonify({"error": "forbidden"}), 403
+        return f(*args, **kwargs)
+    return decorated
+
+def get_current_user() -> dict | None:
+    return get_user_by_id(session.get("user_id", ""))
+
+# ── Manual search endpoint (frontend can call directly) ───────────────────────
+@app.route("/search", methods=["POST"])
+@login_required
+@limiter.limit("30/minute")
+def search_endpoint():
+    """
+    Expose web search to the frontend for standalone search queries.
+    POST { "query": "...", "num": 5 }
+    Returns { "results": [...], "provider": "serper"|"duckduckgo" }
+    """
+    d     = request.get_json(silent=True) or {}
+    query = d.get("query", "").strip()[:300]
+    num   = min(int(d.get("num", 5)), 10)
+    if not query:
+        return jsonify({"error": "Query required"}), 400
+    results  = web_search(query, num)
+    provider = "serper" if SERPER_API_KEY and results else "duckduckgo"
+    return jsonify({"results": results, "provider": provider, "query": query})
 
 # ── Password helpers ──────────────────────────────────────────────────────────
 def hash_pw(pw: str) -> str:
@@ -160,47 +442,25 @@ def check_pw(pw: str, hashed: str) -> bool:
 
 # ── Email helper ──────────────────────────────────────────────────────────────
 def send_email(to: str, subject: str, html_body: str):
-    smtp_host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
-    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
-    smtp_user = os.environ.get("SMTP_USER", "")
-    smtp_pass = os.environ.get("SMTP_PASS", "")
-    from_name = os.environ.get("FROM_NAME", "SUNAI")
-
-    # Guard: don't even attempt to connect if credentials aren't configured.
-    # This is what was causing the SMTP connection to hang indefinitely and
-    # trigger a gunicorn worker timeout (misreported as "out of memory").
-    if not smtp_user or not smtp_pass:
-        app.logger.error(
-            "Email send skipped: SMTP_USER/SMTP_PASS not configured in environment"
-        )
-        return False
-
     try:
+        smtp_host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
+        smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+        smtp_user = os.environ.get("SMTP_USER", "")
+        smtp_pass = os.environ.get("SMTP_PASS", "")
+        from_name = os.environ.get("FROM_NAME", "Aethrion")
+
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
         msg["From"]    = f"{from_name} <{smtp_user}>"
         msg["To"]      = to
         msg.attach(MIMEText(html_body, "html"))
 
-        # timeout=10 ensures a hung/unreachable SMTP server fails fast instead
-        # of blocking the gunicorn worker until it gets killed.
-        with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as server:
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
             server.starttls()
             server.login(smtp_user, smtp_pass)
             server.sendmail(smtp_user, to, msg.as_string())
-        return True
-    except smtplib.SMTPAuthenticationError:
-        app.logger.error(
-            "Email send failed: SMTP authentication rejected — check SMTP_USER/SMTP_PASS "
-            "(if using Gmail, this must be an App Password, not your regular password)"
-        )
-        return False
-    except (TimeoutError, OSError) as e:
-        app.logger.error(f"Email send failed: could not reach SMTP server — {e}")
-        return False
     except Exception as e:
         app.logger.error(f"Email send failed: {e}")
-        return False
 
 # ── Supabase helpers ──────────────────────────────────────────────────────────
 def get_user_by_id(uid):
@@ -306,12 +566,11 @@ def extract_and_save_memories(uid: str, conversation: list):
         convo_text = "\n".join(
             f"{m['role'].upper()}: {m['content'][:300]}" for m in conversation[-6:]
         )
-        resp = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+        resp, _ = llm_chat(
             messages=[{"role": "user", "content": extract_prompt + convo_text}],
             max_tokens=200,
         )
-        text = resp.choices[0].message.content.strip()
+        text = _extract_text(resp).strip()
         if text.upper() != "NONE":
             for line in text.split("\n"):
                 line = line.strip("- •·").strip()
@@ -331,35 +590,6 @@ def log_event(event_type: str, uid: str = None, meta: dict = None):
         }).execute()
     except:
         pass
-
-# ── Auth decorator ─────────────────────────────────────────────────────────────
-def login_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        uid   = session.get("user_id")
-        token = session.get("session_token")
-        if not uid or not token:
-            return jsonify({"error": "login_required"}), 401
-        if not verify_session_token(uid, token):
-            session.clear()
-            return jsonify({"error": "session_expired"}), 401
-        return f(*args, **kwargs)
-    return decorated
-
-def admin_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        uid = session.get("user_id")
-        if not uid:
-            return jsonify({"error": "login_required"}), 401
-        user = get_user_by_id(uid)
-        if not user or user.get("role") != "admin":
-            return jsonify({"error": "forbidden"}), 403
-        return f(*args, **kwargs)
-    return decorated
-
-def get_current_user() -> dict | None:
-    return get_user_by_id(session.get("user_id", ""))
 
 # ── File validation ────────────────────────────────────────────────────────────
 ALLOWED_MIME = {
@@ -389,42 +619,91 @@ def _check_quota(user: dict):
         }), 429)
     return True, None
 
-# Keep only the most recent N messages, and cap each message's length, to
-# stay comfortably under the LLM provider's per-minute token budget. Sending
-# the full 40-message/8000-char window (the old limits) was large enough to
-# trip Groq's free-tier TPM limit and surface a raw JSON error to users.
-CHAT_HISTORY_WINDOW = 16
-CHAT_MSG_MAX_CHARS  = 3000
-
-def _clean_messages(raw_messages: list) -> list:
-    return [
-        {"role": m["role"] if m.get("role") in ("user", "assistant") else "user",
-         "content": str(m.get("content", ""))[:CHAT_MSG_MAX_CHARS]}
-        for m in raw_messages[-CHAT_HISTORY_WINDOW:]
-    ]
-
-def _friendly_llm_error(e: Exception) -> str:
-    """Turn raw provider exceptions (rate limits, oversized requests, etc.)
-    into a message that's safe and sensible to show a user, instead of
-    leaking raw JSON/API internals."""
-    msg = str(e)
-    if "rate_limit_exceeded" in msg or "Request too large" in msg or "413" in msg:
-        return ("This conversation has gotten long enough to hit a temporary rate limit. "
-                "Try clearing some older history, or send a shorter message.")
-    if "429" in msg or "rate limit" in msg.lower():
-        return "We're getting a lot of requests right now — please try again in a moment."
-    if "invalid_api_key" in msg or "401" in msg:
-        return "The AI service is temporarily unavailable. Please try again shortly."
-    return "Something went wrong generating a response. Please try again."
-
 # ─────────────────────────────────────────────────────────────────────────────
 # ROUTES
 # ─────────────────────────────────────────────────────────────────────────────
 
+
+# ── Quiz Generator ────────────────────────────────────────────────────────────
+@app.route("/generate-quiz", methods=["POST"])
+@login_required
+def generate_quiz():
+    data  = request.json
+    topic = data.get("topic", "General Knowledge")
+    level = data.get("level", "Medium")
+    count = min(int(data.get("count", 5)), 10)
+    prompt = f"""Generate {count} multiple choice questions about: {topic}
+Difficulty: {level}
+Format as JSON array (no markdown, no explanation, just the JSON):
+[{{"q":"question text","options":["A) opt1","B) opt2","C) opt3","D) opt4"],"answer":"A","explanation":"why A is correct"}}]"""
+    try:
+        result = llm_chat([{"role":"user","content":prompt}], max_tokens=1500)[0]
+        text = _extract_text(result)
+        import re, json
+        clean = re.sub(r"```(?:json)?|```","",text).strip()
+        return jsonify({"questions": json.loads(clean)})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ── Interview Questions ────────────────────────────────────────────────────────
+@app.route("/interview-questions", methods=["POST"])
+@login_required
+def interview_questions():
+    data    = request.json
+    role    = data.get("role", "Software Engineer")
+    company = data.get("company", "General")
+    qtype   = data.get("type", "both")
+    prompt = f"""Generate 5 interview questions for: {role} at {company}
+Type: {qtype} (hr/technical/both)
+Format as JSON array:
+[{{"type":"hr or technical","question":"...","tip":"brief tip for answering","sample_answer":"2-3 sentence sample answer"}}]
+Return ONLY the JSON array."""
+    try:
+        result = llm_chat([{"role":"user","content":prompt}], max_tokens=1500)[0]
+        text = _extract_text(result)
+        import re, json
+        clean = re.sub(r"```(?:json)?|```","",text).strip()
+        return jsonify({"questions": json.loads(clean)})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ── SEO Routes ─────────────────────────────────────────────────────────────────
+@app.route("/sitemap.xml")
+def sitemap():
+    from flask import Response
+    xml = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://aethrion-ai-assistant-1.onrender.com/</loc>
+    <lastmod>2026-07-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>"""
+    return Response(xml, mimetype="application/xml")
+
+@app.route("/robots.txt")
+def robots():
+    from flask import Response
+    txt = """User-agent: *
+Allow: /
+Sitemap: https://aethrion-ai-assistant-1.onrender.com/sitemap.xml"""
+    return Response(txt, mimetype="text/plain")
+
+@app.route("/static/<path:filename>")
+def static_files(filename):
+    return send_file(f"static/{filename}")
+
 @app.route("/")
 def index():
-    return render_template("index.html", free_limit=FREE_LIMIT,
+    resp = render_template("index.html", free_limit=FREE_LIMIT,
                            razorpay_key_id=os.environ.get("RAZORPAY_KEY_ID", ""))
+    from flask import make_response
+    r = make_response(resp)
+    r.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    r.headers["Pragma"] = "no-cache"
+    r.headers["Expires"] = "0"
+    return r
 
 # ── Register ──────────────────────────────────────────────────────────────────
 @app.route("/register", methods=["POST"])
@@ -458,11 +737,11 @@ def register():
     save_user(user)
 
     # Send verification email
-    site_url = os.environ.get("SITE_URL", "https://sunai.onrender.com")
+    site_url = os.environ.get("SITE_URL", "https://aethrion.onrender.com")
     verify_link = f"{site_url}/verify-email?token={verification_token}&uid={uid}"
-    send_email(email, "Verify your SUNAI account", f"""
+    send_email(email, "Verify your Aethrion account", f"""
     <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px">
-      <h2 style="color:#FF6B00">Welcome to SUNAI, {name}!</h2>
+      <h2 style="color:#FF6B00">Welcome to Aethrion, {name}!</h2>
       <p>Click the button below to verify your email address.</p>
       <a href="{verify_link}" style="display:inline-block;background:#FF6B00;color:white;
          padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:600;margin:20px 0">
@@ -499,11 +778,11 @@ def resend_verification():
         return jsonify({"error": "Already verified"}), 400
     token = secrets.token_urlsafe(32)
     supabase.table("users").update({"verification_token": token}).eq("id", user["id"]).execute()
-    site_url = os.environ.get("SITE_URL", "https://sunai.onrender.com")
+    site_url = os.environ.get("SITE_URL", "https://aethrion.onrender.com")
     verify_link = f"{site_url}/verify-email?token={token}&uid={user['id']}"
-    send_email(user["email"], "Verify your SUNAI account", f"""
+    send_email(user["email"], "Verify your Aethrion account", f"""
     <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px">
-      <h2 style="color:#FF6B00">Verify your SUNAI email</h2>
+      <h2 style="color:#FF6B00">Verify your Aethrion email</h2>
       <a href="{verify_link}" style="display:inline-block;background:#FF6B00;color:white;
          padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:600;margin:20px 0">
         Verify Email
@@ -536,100 +815,7 @@ def login():
         "email_verified": user.get("email_verified", True),
     })
 
-# ── Google OAuth ───────────────────────────────────────────────────────────────
-def _generate_pkce_pair():
-    """Manually generate a PKCE code_verifier/code_challenge pair.
-
-    We do this ourselves instead of relying on google-auth-oauthlib's
-    built-in PKCE handling because its behaviour (whether it auto-generates
-    a verifier, and whether the `code_verifier` attribute survives being
-    read back out) is inconsistent across library versions and was the
-    root cause of repeated "invalid_grant: Missing code verifier" errors.
-    Generating and passing these values explicitly on every call removes
-    that ambiguity entirely.
-    """
-    verifier = secrets.token_urlsafe(64)[:128]
-    digest = hashlib.sha256(verifier.encode("utf-8")).digest()
-    challenge = base64.urlsafe_b64encode(digest).decode("utf-8").rstrip("=")
-    return verifier, challenge
-
-def _google_flow(state=None):
-    from google_auth_oauthlib.flow import Flow
-    redirect_uri = os.environ.get("SITE_URL", "https://sunai.onrender.com") + "/auth/google/callback"
-    flow = Flow.from_client_config(
-        {
-            "web": {
-                "client_id": os.environ["GOOGLE_CLIENT_ID"],
-                "client_secret": os.environ["GOOGLE_CLIENT_SECRET"],
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://oauth2.googleapis.com/token",
-                "redirect_uris": [redirect_uri],
-            }
-        },
-        scopes=["openid", "https://www.googleapis.com/auth/userinfo.email",
-                "https://www.googleapis.com/auth/userinfo.profile"],
-        state=state,
-    )
-    flow.redirect_uri = redirect_uri
-    return flow
-
-@app.route("/auth/google")
-def google_auth():
-    flow = _google_flow()
-    code_verifier, code_challenge = _generate_pkce_pair()
-    auth_url, state = flow.authorization_url(
-        access_type="offline",
-        prompt="select_account",
-        code_challenge=code_challenge,
-        code_challenge_method="S256",
-    )
-    session["oauth_state"] = state
-    session["oauth_code_verifier"] = code_verifier
-    return redirect(auth_url)
-
-@app.route("/auth/google/callback")
-def google_callback():
-    try:
-        import requests as pyrequests
-        flow = _google_flow(state=session.get("oauth_state"))
-        code_verifier = session.get("oauth_code_verifier")
-        # Pass code_verifier explicitly as a kwarg — fetch_token() only falls
-        # back to self.code_verifier if this isn't provided, so passing it
-        # directly guarantees it's used regardless of library internals.
-        flow.fetch_token(authorization_response=request.url, code_verifier=code_verifier)
-        creds = flow.credentials
-        resp = pyrequests.get(
-            "https://www.googleapis.com/oauth2/v2/userinfo",
-            headers={"Authorization": f"Bearer {creds.token}"}
-        )
-        info = resp.json()
-        email = info.get("email", "").lower()
-        name  = info.get("name", email.split("@")[0])
-
-        user = get_user_by_email(email)
-        if not user:
-            uid = str(uuid.uuid4())
-            role = "admin" if email in ADMIN_EMAILS else "user"
-            user = {
-                "id": uid, "name": name, "email": email,
-                "password": hash_pw(secrets.token_hex(16)),
-                "plan": "free", "joined": str(date.today()),
-                "email_verified": True, "role": role,
-            }
-            save_user(user)
-            log_event("register_google", uid)
-
-        session_token = str(uuid.uuid4())
-        set_session_token(user["id"], session_token)
-        session.permanent = True
-        session["user_id"] = user["id"]
-        session["session_token"] = session_token
-        log_event("login_google", user["id"])
-        return redirect("/")
-    except Exception as e:
-        app.logger.exception("Google OAuth callback failed")
-        return redirect("/?error=oauth_failed")
-
+# ── Forgot password ────────────────────────────────────────────────────────────
 # ── Forgot password ────────────────────────────────────────────────────────────
 @app.route("/forgot-password", methods=["POST"])
 @limiter.limit("3/minute; 10/hour")
@@ -644,12 +830,12 @@ def forgot_password():
         supabase.table("users").update({
             "reset_token": token, "reset_expires": expires
         }).eq("id", user["id"]).execute()
-        site_url = os.environ.get("SITE_URL", "https://sunai.onrender.com")
+        site_url = os.environ.get("SITE_URL", "https://aethrion.onrender.com")
         reset_link = f"{site_url}/reset-password?token={token}&uid={user['id']}"
-        send_email(email, "Reset your SUNAI password", f"""
+        send_email(email, "Reset your Aethrion password", f"""
         <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px">
           <h2 style="color:#FF6B00">Reset your password</h2>
-          <p>Click the button below to reset your SUNAI password. This link expires in 1 hour.</p>
+          <p>Click the button below to reset your Aethrion password. This link expires in 1 hour.</p>
           <a href="{reset_link}" style="display:inline-block;background:#FF6B00;color:white;
              padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:600;margin:20px 0">
             Reset Password
@@ -763,7 +949,13 @@ def chat_stream():
     if not messages:
         return jsonify({"error": "No message provided"}), 400
 
-    clean_messages = _clean_messages(messages)
+    clean_messages = [
+        {"role": m["role"] if m.get("role") in ("user", "assistant") else "user",
+         "content": str(m.get("content", ""))[:8000]}
+        for m in messages[-40:]
+    ]
+
+    # Inject AI memories into system prompt
     memories = get_memories(user["id"])
     mem_block = ""
     if memories:
@@ -774,39 +966,140 @@ def chat_stream():
     search_results = web_search(last_user_msg) if needs_web_search(last_user_msg) else []
     search_context = format_search_context(search_results)
 
+    # ── Mode & Language system prompt ──────────────────────────────────────
+    mode     = request.json.get("mode", "general")
+    language = request.json.get("language", "English")
+
+    LANG_INSTRUCTION = {
+        "English":   "Always respond in English.",
+        "Tamil":     "Always respond in Tamil (தமிழ்). Use Tamil script throughout.",
+        "Hindi":     "Always respond in Hindi (हिंदी). Use Devanagari script throughout.",
+        "Telugu":    "Always respond in Telugu (తెలుగు). Use Telugu script throughout.",
+        "Kannada":   "Always respond in Kannada (ಕನ್ನಡ). Use Kannada script throughout.",
+        "Malayalam": "Always respond in Malayalam (മലയാളം). Use Malayalam script throughout.",
+        "Bengali":   "Always respond in Bengali (বাংলা). Use Bengali script throughout.",
+        "Marathi":   "Always respond in Marathi (मराठी). Use Devanagari script throughout.",
+        "Gujarati":  "Always respond in Gujarati (ગુજરાતી). Use Gujarati script throughout.",
+        "Punjabi":   "Always respond in Punjabi (ਪੰਜਾਬੀ). Use Gurmukhi script throughout.",
+    }.get(language, "Always respond in English.")
+
+    MODE_PROMPTS = {
+        "general": (
+            "You are Aethrion, a powerful free AI assistant — Intelligence Without Limits. "
+            "Help with coding, science, career, math, and any topic. Be clear, concise and helpful."
+        ),
+        "study": (
+            "You are Aethrion in Study Mode — an expert teacher for Indian students. "
+            "Explain every concept step-by-step like a patient teacher. "
+            "Use simple language, real-life examples, analogies, and numbered steps. "
+            "After explaining, always ask: 'Do you want me to give you a practice question on this?' "
+            "If the topic is from Indian syllabus (NCERT, JEE, NEET, CBSE, State boards), mention that context."
+        ),
+        "code": (
+            "You are Aethrion in Code Mode — an expert software engineer and coding mentor. "
+            "When given code: review it for bugs, suggest improvements, explain what it does. "
+            "Always provide working code examples with comments. "
+            "Mention time/space complexity for algorithms. "
+            "Format all code in proper code blocks with language specified. "
+            "If user pastes an error, diagnose and fix it immediately."
+        ),
+        "interview": (
+            "You are Aethrion in Interview Prep Mode — an expert career coach for Indian IT companies. "
+            "You know interview patterns for TCS, Infosys, Wipro, HCL, Accenture, Cognizant, "
+            "Capgemini, IBM, Google India, Microsoft India, Amazon India, Flipkart, Zomato, Swiggy. "
+            "For HR questions: give structured answers using STAR method. "
+            "For technical questions: give clear explanations + code if needed. "
+            "After each answer, say: 'Want me to give you a follow-up question?' "
+            "Also help with: resume tips, salary negotiation, aptitude tests, group discussion tips."
+        ),
+        "assignment": (
+            "You are Aethrion in Assignment Helper Mode for Indian engineering and science students. "
+            "You know syllabuses of: Anna University, VTU, Mumbai University, Delhi University, "
+            "JNTU, Pune University, and NCERT/CBSE curriculum. "
+            "Give structured, well-formatted answers suitable for submission. "
+            "Include: introduction, main content with headings, diagrams described in text, conclusion. "
+            "Always mention if the topic is from a specific semester/subject."
+        ),
+        "codereview": (
+            "You are Aethrion in Code Review Mode — a senior software engineer doing code review. "
+            "When user shares code, provide: "
+            "1) BUGS - list any bugs or errors found "
+            "2) IMPROVEMENTS - suggest better approaches "
+            "3) BEST PRACTICES - point out style/pattern issues "
+            "4) SECURITY - flag any security concerns "
+            "5) OPTIMIZED VERSION - provide the improved code "
+            "Be specific, constructive, and educational."
+        ),
+        "debug": (
+            "You are Aethrion in Debug Mode — an expert debugger. "
+            "When user pastes an error message or broken code: "
+            "1) Identify the exact cause of the error "
+            "2) Explain why it's happening in simple terms "
+            "3) Provide the exact fix with corrected code "
+            "4) Suggest how to avoid this error in the future. "
+            "Be fast and precise."
+        ),
+        "quiz": (
+            "You are Aethrion in Quiz Mode — an interactive quiz master. "
+            "Generate MCQ questions on the topic the user mentions. "
+            "Format: Question, then 4 options labeled A/B/C/D, then wait for user answer. "
+            "After user answers, reveal if correct and explain the right answer. "
+            "Keep score and mention it after each question. "
+            "Make questions progressively harder."
+        ),
+        "docs": (
+            "You are Aethrion in Docs Explainer Mode. "
+            "When user pastes technical documentation, API docs, or any technical text: "
+            "Explain it in the simplest possible plain English. "
+            "Use analogies and examples. "
+            "Summarize key points as a bulleted list. "
+            "Point out the most important parts a developer needs to know. "
+            "End with: 'What specific part do you want me to explain deeper?'"
+        ),
+    }
+
+    base_prompt = MODE_PROMPTS.get(mode, MODE_PROMPTS["general"])
     system_prompt = (
-        "You are SUNAI, a brilliant friendly AI assistant. "
-        "Help with coding, science, career, math, and any topic. Be clear, concise and helpful. "
-        "Your training has a knowledge cutoff, so when WEB SEARCH RESULTS are provided below, "
-        "always prioritise them for current facts, prices, news, or recent events. "
-        "Cite sources using [1], [2] etc. when you use search results."
+        base_prompt + " " + LANG_INSTRUCTION
+        + " Your training has a knowledge cutoff, so when WEB SEARCH RESULTS are provided below, "
+        "always prioritise them for current facts. Cite sources using [1], [2] etc."
         + (("\n\n" + search_context) if search_context else "")
         + mem_block
     )
 
     # Tell the frontend if we ran a search (so it can show a small indicator)
     did_search = bool(search_results)
+    search_provider = "serper" if (SERPER_API_KEY and did_search) else "duckduckgo"
 
     def generate():
         if did_search:
-            yield f"data: {json.dumps({'searching': True, 'sources': [r['link'] for r in search_results]})}\n\n"
+            yield f"data: {json.dumps({'searching': True, 'provider': search_provider, 'sources': [r['link'] for r in search_results]})}\n\n"
 
         full_reply = []
         try:
-            stream = groq_client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[{"role": "system", "content": system_prompt}] + clean_messages,
-                max_tokens=2048,
-                stream=True,
-            )
+            # Try primary model, fall back to faster/cheaper model on rate limit
+            stream, _provider = llm_chat(
+                    messages=[{"role": "system", "content": system_prompt}] + clean_messages,
+                    max_tokens=1024,
+                    stream=True,
+                )
             for chunk in stream:
                 delta = chunk.choices[0].delta.content or ""
                 if delta:
                     full_reply.append(delta)
                     yield f"data: {json.dumps({'token': delta})}\n\n"
         except Exception as e:
-            app.logger.error(f"chat_stream groq error: {e}")
-            yield f"data: {json.dumps({'error': _friendly_llm_error(e)})}\n\n"
+            err_str = str(e)
+            if "rate_limit" in err_str or "429" in err_str or "Rate limit" in err_str:
+                friendly = "Rate limit reached. Please wait a moment and try again."
+            elif "quota" in err_str.lower() or "exceeded" in err_str.lower():
+                friendly = "Daily quota exceeded. Please try again tomorrow."
+            elif "timeout" in err_str.lower():
+                friendly = "Request timed out. Please try again."
+            else:
+                friendly = "Something went wrong. Please try again."
+            app.logger.warning(f"Groq stream error: {err_str}")
+            yield f"data: {json.dumps({'error': friendly})}\n\n"
             return
 
         # Save to DB after stream completes
@@ -846,34 +1139,54 @@ def chat():
     messages = (request.get_json(silent=True) or {}).get("messages", [])
     if not messages:
         return jsonify({"error": "No message provided"}), 400
-    clean_messages = _clean_messages(messages)
+    clean_messages = [
+        {"role": m["role"] if m.get("role") in ("user", "assistant") else "user",
+         "content": str(m.get("content", ""))[:8000]}
+        for m in messages[-40:]
+    ]
     memories  = get_memories(user["id"])
     mem_block = ("\n\nKnown facts about this user:\n" + "\n".join(f"- {m}" for m in memories)) if memories else ""
     last_user_msg = next((m["content"] for m in reversed(clean_messages) if m["role"] == "user"), "")
     search_results = web_search(last_user_msg) if needs_web_search(last_user_msg) else []
     search_context = format_search_context(search_results)
+    mode     = request.json.get("mode", "general")
+    language = request.json.get("language", "English")
+    LANG_INSTRUCTION2 = {
+        "English":"Always respond in English.",
+        "Tamil":"Always respond in Tamil (தமிழ்).",
+        "Hindi":"Always respond in Hindi (हिंदी).",
+        "Telugu":"Always respond in Telugu (తెలుగు).",
+        "Kannada":"Always respond in Kannada (ಕನ್ನಡ).",
+        "Malayalam":"Always respond in Malayalam (മലയാളം).",
+        "Bengali":"Always respond in Bengali (বাংলা).",
+        "Marathi":"Always respond in Marathi (मराठी).",
+        "Gujarati":"Always respond in Gujarati (ગુજરાતી).",
+        "Punjabi":"Always respond in Punjabi (ਪੰਜਾਬੀ).",
+    }.get(language, "Always respond in English.")
     system_prompt = (
-        "You are SUNAI, a brilliant friendly AI assistant. Help with coding, science, career, math, and any topic. Be clear, concise and helpful. "
+        f"You are Aethrion — Intelligence Without Limits. A powerful free AI built for Indian students and developers. Mode: {mode}. {LANG_INSTRUCTION2} "
+        "Help with coding, science, career, math, assignments, interview prep and any topic. "
         "When WEB SEARCH RESULTS are provided, prioritise them for current facts. Cite as [1],[2] etc."
         + (("\n\n" + search_context) if search_context else "")
         + mem_block
     )
     try:
-        resp = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+        resp, _provider = llm_chat(
             messages=[{"role": "system", "content": system_prompt}] + clean_messages,
-            max_tokens=2048,
+            max_tokens=1024,
         )
-        reply = resp.choices[0].message.content
+        reply = _extract_text(resp)
         uid = user["id"]
         add_history(uid, "user", clean_messages[-1]["content"])
         add_history(uid, "assistant", reply)
         used = get_today_usage(uid)
         remaining = 999 if user["plan"] == "pro" else max(0, FREE_LIMIT - used)
-        return jsonify({"reply": reply, "remaining": remaining, "plan": user["plan"]})
-    except Exception as e:
+        search_provider = "serper" if (SERPER_API_KEY and search_results) else "duckduckgo"
+        return jsonify({"reply": reply, "remaining": remaining, "plan": user["plan"],
+                        "searched": bool(search_results), "provider": search_provider})
+    except Exception:
         app.logger.exception("Chat failed")
-        return jsonify({"error": _friendly_llm_error(e)}), 500
+        return jsonify({"error": "Processing failed."}), 500
 
 # ── Image analysis ──────────────────────────────────────────────────────────────
 @app.route("/analyze-image", methods=["POST"])
@@ -896,11 +1209,13 @@ def analyze_image():
     try:
         import PIL.Image, io
         img  = PIL.Image.open(io.BytesIO(img_file.read()))
-        resp = vision_model.generate_content([f"You are SUNAI. {question}", img])
+        resp = vision_model.generate_content([f"You are Aethrion. {question}", img])
         reply = resp.text
         add_history(user["id"], "user", f"[Image] {question}")
         add_history(user["id"], "assistant", reply)
-        return jsonify({"reply": reply})
+        used = get_today_usage(user["id"])
+        remaining = 999 if user["plan"] == "pro" else max(0, FREE_LIMIT - used)
+        return jsonify({"reply": reply, "remaining": remaining})
     except Exception:
         app.logger.exception("Image analysis failed")
         return jsonify({"error": "Image processing failed."}), 500
@@ -921,7 +1236,10 @@ def generate_image():
     if not prompt:
         return jsonify({"error": "No prompt provided"}), 400
     try:
-        response = imagen_model.generate_content(contents=prompt)
+        response = imagen_model.generate_content(
+            contents=prompt,
+            generation_config=genai.GenerationConfig(response_modalities=["IMAGE", "TEXT"]),
+        )
         for part in response.candidates[0].content.parts:
             if part.inline_data:
                 img_b64 = base64.b64encode(part.inline_data.data).decode()
@@ -987,18 +1305,19 @@ def analyze_file():
         else:
             text = file.read().decode("utf-8", errors="ignore")
         text = text[:8000]
-        resp = groq_client.chat.completions.create(
-            model="llama-3.1-70b-versatile",
+        resp, _provider = llm_chat(
             messages=[
-                {"role": "system", "content": "You are SUNAI, a helpful AI assistant."},
+                {"role": "system", "content": "You are Aethrion, a helpful AI assistant."},
                 {"role": "user",   "content": f"File:\n\n{text}\n\nQuestion: {question}"},
             ],
             max_tokens=2048,
         )
-        reply = resp.choices[0].message.content
+        reply = _extract_text(resp)
         add_history(user["id"], "user", f"[File: {file.filename}] {question}")
         add_history(user["id"], "assistant", reply)
-        return jsonify({"reply": reply})
+        used = get_today_usage(user["id"])
+        remaining = 999 if user["plan"] == "pro" else max(0, FREE_LIMIT - used)
+        return jsonify({"reply": reply, "remaining": remaining})
     except Exception:
         app.logger.exception("File analysis failed")
         return jsonify({"error": "File processing failed."}), 500
@@ -1089,7 +1408,7 @@ def invite_workspace(wid):
         return jsonify({"error": "Only workspace owner can invite"}), 403
     invitee = get_user_by_email(email)
     if not invitee:
-        return jsonify({"error": "No SUNAI account found for that email"}), 404
+        return jsonify({"error": "No Aethrion account found for that email"}), 404
     # Check not already a member
     existing = (supabase.table("workspace_members").select("id")
                 .eq("workspace_id", wid).eq("user_id", invitee["id"]).maybe_single().execute())
@@ -1160,7 +1479,7 @@ def admin_set_plan(uid):
 # ── SEO ────────────────────────────────────────────────────────────────────────
 @app.route("/sitemap.xml")
 def sitemap():
-    base = os.environ.get("SITE_URL", "https://sunai.onrender.com")
+    base = os.environ.get("SITE_URL", "https://aethrion.onrender.com")
     xml  = f"""<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>{base}/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
@@ -1169,7 +1488,7 @@ def sitemap():
 
 @app.route("/robots.txt")
 def robots():
-    base = os.environ.get("SITE_URL", "https://sunai.onrender.com")
+    base = os.environ.get("SITE_URL", "https://aethrion.onrender.com")
     return app.response_class(
         f"User-agent: *\nAllow: /\nSitemap: {base}/sitemap.xml", mimetype="text/plain"
     )
