@@ -71,7 +71,15 @@ supabase: Client = create_client(
     os.environ["SUPABASE_KEY"],
 )
 groq_client = Groq(api_key=os.environ["GROQ_API_KEY"])
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+if _GENAI_AVAILABLE:
+    genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+    gemini_chat_model = genai.GenerativeModel("gemini-2.0-flash")
+    vision_model = gemini_chat_model  # gemini-2.0-flash handles multimodal (text+image) input natively
+    imagen_model = genai.GenerativeModel("gemini-2.5-flash-image")  # current model for native image generation
+else:
+    gemini_chat_model = None
+    vision_model = None
+    imagen_model = None
 
 # ── Extra free LLM providers (fallback chain) ─────────────────────────────────
 CEREBRAS_API_KEY = os.environ.get("CEREBRAS_API_KEY", "")
