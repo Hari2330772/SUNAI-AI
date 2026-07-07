@@ -28,8 +28,7 @@ from dotenv import load_dotenv
 from supabase import create_client, Client
 from groq import Groq
 from openai import OpenAI
-from google import genai
-from google.genai import types as genai_types
+import google.generativeai as genai
 import smtplib
 import re
 import urllib.request
@@ -81,8 +80,8 @@ ddg_client = OpenAI(
     api_key="dummy",
     base_url="https://duckduckgo.com/duckchat/v1/chat",
 )
-# vision handled via gemini_client
-# imagen handled via gemini_client
+
+
 rzp_client = razorpay.Client(
     auth=(os.environ["RAZORPAY_KEY_ID"], os.environ["RAZORPAY_KEY_SECRET"])
 )
@@ -121,50 +120,47 @@ _OPENAI_PROVIDERS = [
 ]
 
 # Gemini chat model — reuses existing GEMINI_API_KEY, no extra setup
-# gemini_chat_model handled via gemini_client
+
 
 def _is_rate_limit(err: Exception) -> bool:
     s = str(err).lower()
     return "rate_limit" in s or "429" in s or "quota" in s or "exceeded" in s or "resource_exhausted" in s
 
 def _gemini_chat(messages: list, max_tokens: int = 1024, stream: bool = False):
-    """Convert OpenAI-style messages to Gemini format using new google.genai SDK."""
+    """Convert OpenAI-style messages to Gemini format."""
     system_parts = [m["content"] for m in messages if m["role"] == "system"]
     history = []
     for m in messages:
         if m["role"] == "system":
             continue
         role = "user" if m["role"] == "user" else "model"
-        history.append(genai_types.Content(role=role, parts=[genai_types.Part(text=m["content"])]))
+        history.append({"role": role, "parts": [m["content"]]})
 
-    system_instruction = system_parts[0] if system_parts else None
-    last_content = history[-1] if history else None
-    chat_history = history[:-1] if len(history) > 1 else []
+    model = gemini_chat_model
+    if system_parts:
+        model = genai.GenerativeModel(
+            "gemini-2.0-flash",
+            system_instruction=system_parts[0],
+        )
 
-    config = genai_types.GenerateContentConfig(
-        max_output_tokens=max_tokens,
-        system_instruction=system_instruction,
-    )
+    chat = model.start_chat(history=history[:-1] if len(history) > 1 else [])
+    last_msg = history[-1]["parts"][0] if history else ""
 
     if stream:
         def _gemini_stream():
-            chat = gemini_client.chats.create(
-                model="gemini-2.0-flash",
-                config=config,
-                history=chat_history,
+            response = chat.send_message(
+                last_msg,
+                generation_config=genai.GenerationConfig(max_output_tokens=max_tokens),
+                stream=True,
             )
-            last_text = last_content.parts[0].text if last_content else ""
-            for chunk in chat.send_message_stream(last_text):
+            for chunk in response:
                 yield chunk.text or ""
         return _gemini_stream(), "gemini"
     else:
-        chat = gemini_client.chats.create(
-            model="gemini-2.0-flash",
-            config=config,
-            history=chat_history,
+        response = chat.send_message(
+            last_msg,
+            generation_config=genai.GenerationConfig(max_output_tokens=max_tokens),
         )
-        last_text = last_content.parts[0].text if last_content else ""
-        response = chat.send_message(last_text)
         return response.text, "gemini"
 
 def llm_chat(messages: list, max_tokens: int = 1024, stream: bool = False):
@@ -1218,7 +1214,7 @@ def generate_image():
     try:
         response = imagen_model.generate_content(
             contents=prompt,
-            generation_config=genai_types.GenerateContentConfig(response_modalities=["IMAGE", "TEXT"]),
+            generation_config=genai.GenerationConfig(response_modalities=["IMAGE", "TEXT"]),
         )
         for part in response.candidates[0].content.parts:
             if part.inline_data:
